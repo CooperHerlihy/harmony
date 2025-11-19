@@ -1,0 +1,9 @@
+[submodule "vendor/Vulkan-Headers"]
+	path = vendor/Vulkan-Headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers
+[submodule "vendor/libX11"]
+	path = vendor/libX11
+	url = https://github.com/mirror/libX11
+[submodule "vendor/stb"]
+	path = vendor/stb
+	url = https://github.com/nothings/stb

@@ -1,0 +1,10 @@
+-std=gnu99
+-Wall
+-Wextra
+-Wconversion
+-Wshadow
+-pedantic
+-Iinclude
+-Ivendor/libX11/include
+-Ivendor/Vulkan-Headers/include
+-Ivendor/stb

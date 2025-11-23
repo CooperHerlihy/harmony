@@ -1,4 +1,4 @@
--std=gnu99
+-std=c11
 -Wall
 -Wextra
 -Wconversion
@@ -7,4 +7,4 @@
 -Iinclude
 -Ivendor/libX11/include
 -Ivendor/Vulkan-Headers/include
--Ivendor/stb
+-DHARMONY_IMPLEMENTATION_ALL

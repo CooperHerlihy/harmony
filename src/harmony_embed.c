@@ -1,6 +1,4 @@
-#include "harmony_core.h"
-
-#include <stdio.h>
+#include "harmony.h"
 
 /**
  * A small script which takes a file and turns its data into a C file which can

@@ -2376,6 +2376,7 @@ static void harmony_load_vulkan_instance(HarmonyVulkan *vk) {
     HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkGetPhysicalDeviceSurfaceFormatsKHR);
     HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkGetPhysicalDeviceSurfacePresentModesKHR);
     HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
+    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkCreateDevice)
 }
 
 #undef HARMONY_LOAD_VULKAN_INSTANCE_FUNC
@@ -2385,7 +2386,6 @@ static void harmony_load_vulkan_instance(HarmonyVulkan *vk) {
     if (vk->pfn. name == NULL) { harmony_error("Could not load " #name); }
 
 static void harmony_load_vulkan_device(HarmonyVulkan *vk) {
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCreateDevice)
     HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkDestroyDevice)
     HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkDeviceWaitIdle)
 

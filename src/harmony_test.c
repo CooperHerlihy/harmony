@@ -9,6 +9,9 @@
 #include "harmony_math.h"
 
 int main(void) {
+    HarmonyVulkan vk = harmony_vulkan_create();
+    harmony_vulkan_destroy(&vk);
+
     harmony_log_info("Tests : TODO\n");
 }
 

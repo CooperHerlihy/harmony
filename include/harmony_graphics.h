@@ -369,11 +369,12 @@ typedef struct HarmonyVulkanFuncs {
     HARMONY_MAKE_VULKAN_FUNC(vkGetPhysicalDeviceQueueFamilyProperties)
     HARMONY_MAKE_VULKAN_FUNC(vkGetPhysicalDeviceFeatures)
 
+    HARMONY_MAKE_VULKAN_FUNC(vkDestroySurfaceKHR)
     HARMONY_MAKE_VULKAN_FUNC(vkCreateDevice)
+
     HARMONY_MAKE_VULKAN_FUNC(vkDestroyDevice)
     HARMONY_MAKE_VULKAN_FUNC(vkDeviceWaitIdle)
 
-    HARMONY_MAKE_VULKAN_FUNC(vkDestroySurfaceKHR)
     HARMONY_MAKE_VULKAN_FUNC(vkGetPhysicalDeviceSurfaceFormatsKHR)
     HARMONY_MAKE_VULKAN_FUNC(vkGetPhysicalDeviceSurfacePresentModesKHR)
     HARMONY_MAKE_VULKAN_FUNC(vkGetPhysicalDeviceSurfaceCapabilitiesKHR)
@@ -2376,6 +2377,8 @@ static void harmony_load_vulkan_instance(HarmonyVulkan *vk) {
     HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkGetPhysicalDeviceSurfaceFormatsKHR);
     HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkGetPhysicalDeviceSurfacePresentModesKHR);
     HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
+
+    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkDestroySurfaceKHR)
     HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkCreateDevice)
 }
 
@@ -2389,7 +2392,6 @@ static void harmony_load_vulkan_device(HarmonyVulkan *vk) {
     HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkDestroyDevice)
     HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkDeviceWaitIdle)
 
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkDestroySurfaceKHR)
     HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCreateSwapchainKHR)
     HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkDestroySwapchainKHR)
     HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkGetSwapchainImagesKHR)
@@ -2484,19 +2486,14 @@ HarmonyVulkan harmony_vulkan_create(void) {
     HarmonyVulkan vk;
 
     harmony_load_vulkan(&vk);
-
     vk.instance = harmony_vk_create_instance(&vk);
-
     harmony_load_vulkan_instance(&vk);
-
     harmony_debug_mode(vk.debug_messenger = harmony_vk_create_debug_messenger(&vk));
     vk.gpu = harmony_vk_find_physical_device(&vk);
-    vk.device = harmony_vk_create_device(&vk);
-
-    harmony_load_vulkan_device(&vk);
-
     if (!harmony_vk_find_queue_family(&vk, &vk.queue_family, VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT))
         harmony_error("Could not find Vulkan queue family");
+    vk.device = harmony_vk_create_device(&vk);
+    harmony_load_vulkan_device(&vk);
     
     return vk;
 }

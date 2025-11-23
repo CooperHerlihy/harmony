@@ -145,10 +145,6 @@ inline f64 harmony_clock_tick(HarmonyClock *hclock) {
     return ((f64)hclock->time.tv_sec + (f64)hclock->time.tv_nsec / 1.0e9) - prev;
 }
 
-#ifdef __unix__
-
-#include <dlfcn.h>
-
 /**
  * Opens a dynamic library at the path
  *
@@ -158,15 +154,7 @@ inline f64 harmony_clock_tick(HarmonyClock *hclock) {
  * - An opaque pointer to the library
  * - NULL on failure
  */
-inline void *harmony_dynamic_lib_open(const char *path) {
-    harmony_assert(path != NULL);
-
-    void *lib = dlopen(path, RTLD_LAZY);
-    if (lib == NULL)
-        harmony_log_warning("Could not open dynamic lib %s: %s", path, dlerror());
-
-    return lib;
-}
+inline void *harmony_dynamic_lib_open(const char *path);
 
 /**
  * Closes a dynamic library
@@ -174,10 +162,7 @@ inline void *harmony_dynamic_lib_open(const char *path) {
  * Parameters
  * - lib The dynamic library to close, must not be NULL
  */
-inline void harmony_dynamic_lib_close(void *lib) {
-    harmony_assert(lib != NULL);
-    dlclose(lib);
-}
+inline void harmony_dynamic_lib_close(void *lib);
 
 /**
  * Loads a symbol from a dynamic library
@@ -189,6 +174,27 @@ inline void harmony_dynamic_lib_close(void *lib) {
  * - A pointer to the loaded symbol
  * - NULL on failure
  */
+inline void *harmony_dynamic_lib_load_symbol(void *lib, const char *symbol);
+
+#ifdef __unix__
+
+#include <dlfcn.h>
+
+inline void *harmony_dynamic_lib_open(const char *path) {
+    harmony_assert(path != NULL);
+
+    void *lib = dlopen(path, RTLD_LAZY);
+    if (lib == NULL)
+        harmony_log_warning("Could not open dynamic lib %s: %s", path, dlerror());
+
+    return lib;
+}
+
+inline void harmony_dynamic_lib_close(void *lib) {
+    harmony_assert(lib != NULL);
+    dlclose(lib);
+}
+
 inline void *harmony_dynamic_lib_load_symbol(void *lib, const char *symbol) {
     harmony_assert(lib != NULL);
     harmony_assert(symbol != NULL);

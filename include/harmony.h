@@ -212,149 +212,6 @@ inline void *harmony_dynamic_lib_load_symbol(void *lib, const char *symbol) {
 
 #endif
 
-/**
- * The Harmony interface for generic allocators
- */
-typedef struct HarmonyAllocator {
-    /**
-     * Opaque data passed to all functions
-     */
-    void *data;
-    /**
-     * Allocates memory
-     */
-    void *(*alloc)(void *data, usize size);
-    /**
-     * Changes the size of an allocation, potentially returning a different
-     * allocation, with the data copied over
-     */
-    void *(*realloc)(void *data, void *allocation, usize old_size, usize new_size);
-    /**
-     * Frees allocated memory
-     */
-    void (*free)(void *data, void *allocation, usize size);
-} HarmonyAllocator;
-
-/**
- * A convenience to call alloc from Harmony context
- *
- * Parameters
- * - context The Harmony constext, must not be NULL
- * - size The size in bytes to allocate
- * Returns
- * - The allocation
- * - NULL if the allocation failed
- */
-inline void *harmony_alloc(const HarmonyAllocator *allocator, usize size) {
-    harmony_assert(allocator != NULL);
-    return allocator->alloc(allocator->data, size);
-}
-
-/**
- * A convenience to call realloc from Harmony context
- *
- * Parameters
- * - context The Harmony constext, must not be NULL
- * - allocation The allocation to resize
- * - old_size The original size in bytes of the allocation
- * - new_size The new size in bytes for the allocation
- * Returns
- * - The allocation
- * - NULL if the allocation failed
- */
-inline void *harmony_realloc(const HarmonyAllocator *allocator, void *allocation, usize old_size, usize new_size) {
-    harmony_assert(allocator != NULL);
-    return allocator->realloc(allocator->data, allocation, old_size, new_size);
-}
-
-/**
- * A convenience to call alloc from Harmony context
- *
- * Parameters
- * - context The Harmony constext, must not be NULL
- * - allocation The allocation to resize
- * - size The size in bytes of the allocation
- */
-inline void harmony_free(const HarmonyAllocator *allocator, void *allocation, usize size) {
-    harmony_assert(allocator != NULL);
-    allocator->free(allocator->data, allocation, size);
-}
-
-/**
- * Calls malloc, checking for NULL in debug mode
- *
- * Parameters
- * - dummy A dummy value to fit the HarmonyAllocator interface
- * - size The size of the allocation in bytes
- * Returns
- * - The allocated memory
- */
-inline void *harmony_default_alloc(void *dummy, usize size) {
-    (void)dummy;
-    void *allocation = malloc(size);
-    harmony_assert(allocation != NULL);
-    return allocation;
-}
-
-/**
- * Calls realloc, checking for NULL in debug mode
- *
- * Parameters
- * - dummy A dummy value to fit the HarmonyAllocator interface
- * - allocation The allocation to resize
- * - old_size The size of the original allocation in bytes
- * - new_size The size of the new allocation in bytes
- * Returns
- * - The allocated memory
- */
-inline void *harmony_default_realloc(void *dummy, void *allocation, usize old_size, usize new_size) {
-    (void)dummy;
-    (void)old_size;
-    void *new_allocation = realloc(allocation, new_size);
-    harmony_assert(new_allocation != NULL);
-    return new_allocation;
-}
-
-/**
- * Calls free
- *
- * Parameters
- * - dummy A dummy value to fit the HarmonyAllocator interface
- * - allocation The allocation to free
- * - size The size of the allocation in bytes
- */
-inline void harmony_default_free(void *dummy, void *allocation, usize size) {
-    (void)dummy;
-    (void)size;
-    free(allocation);
-}
-
-/**
- * Creates the interface for a HarmonyAllocator using malloc, realloc, and free
- */
-inline HarmonyAllocator harmony_default_allocator(void) {
-    return (HarmonyAllocator){
-        .data = NULL,
-        .alloc = (void *(*)(void *, usize))&harmony_default_alloc,
-        .realloc = (void *(*)(void *, void *, usize, usize))&harmony_default_realloc,
-        .free = (void (*)(void *, void *, usize))&harmony_default_free,
-    };
-}
-
-/**
- * Aligns a pointer to an alignment
- *
- * Parameters
- * - value The value to align
- * - alignment The alignment, must be a multiple of 2 greater than 0
- * Returns
- * - The aligned size
- */
-inline usize harmony_align(usize value, usize alignment) {
-    harmony_assert(alignment > 0 && (alignment & (alignment - 1)) == 0);
-    return (value + alignment - 1) & ~(alignment - 1);
-}
-
 #define PI      3.1415926535897932
 #define TAU     6.2831853071795864
 #define EULER   2.7182818284590452
@@ -410,6 +267,20 @@ inline usize harmony_align(usize value, usize alignment) {
  * - The clamped value
  */
 #define harmony_clamp(x, a, b) harmony_max((a), harmony_min((b), (x)))
+
+/**
+ * Aligns a pointer to an alignment
+ *
+ * Parameters
+ * - value The value to align
+ * - alignment The alignment, must be a multiple of 2 greater than 0
+ * Returns
+ * - The aligned size
+ */
+inline usize harmony_align(usize value, usize alignment) {
+    harmony_assert(alignment > 0 && (alignment & (alignment - 1)) == 0);
+    return (value + alignment - 1) & ~(alignment - 1);
+}
 
 /**
  * A 2D vector

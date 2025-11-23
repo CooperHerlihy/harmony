@@ -30,6 +30,113 @@
 #include "harmony.h"
 
 /**
+ * The Harmony interface for generic allocators
+ */
+typedef struct HarmonyAllocator {
+    /**
+     * Opaque data passed to all functions
+     */
+    void *data;
+    /**
+     * Allocates memory
+     */
+    void *(*alloc)(void *data, usize size);
+    /**
+     * Changes the size of an allocation, potentially returning a different
+     * allocation, with the data copied over
+     */
+    void *(*realloc)(void *data, void *allocation, usize old_size, usize new_size);
+    /**
+     * Frees allocated memory
+     */
+    void (*free)(void *data, void *allocation, usize size);
+} HarmonyAllocator;
+
+/**
+ * A convenience to call alloc from Harmony context
+ *
+ * Parameters
+ * - context The Harmony constext, must not be NULL
+ * - size The size in bytes to allocate
+ * Returns
+ * - The allocation
+ * - NULL if the allocation failed
+ */
+inline void *harmony_alloc(const HarmonyAllocator *allocator, usize size) {
+    harmony_assert(allocator != NULL);
+    return allocator->alloc(allocator->data, size);
+}
+
+/**
+ * A convenience to call realloc from Harmony context
+ *
+ * Parameters
+ * - context The Harmony constext, must not be NULL
+ * - allocation The allocation to resize
+ * - old_size The original size in bytes of the allocation
+ * - new_size The new size in bytes for the allocation
+ * Returns
+ * - The allocation
+ * - NULL if the allocation failed
+ */
+inline void *harmony_realloc(const HarmonyAllocator *allocator, void *allocation, usize old_size, usize new_size) {
+    harmony_assert(allocator != NULL);
+    return allocator->realloc(allocator->data, allocation, old_size, new_size);
+}
+
+/**
+ * A convenience to call alloc from Harmony context
+ *
+ * Parameters
+ * - context The Harmony constext, must not be NULL
+ * - allocation The allocation to resize
+ * - size The size in bytes of the allocation
+ */
+inline void harmony_free(const HarmonyAllocator *allocator, void *allocation, usize size) {
+    harmony_assert(allocator != NULL);
+    allocator->free(allocator->data, allocation, size);
+}
+
+/**
+ * Calls malloc, checking for NULL in debug mode
+ *
+ * Parameters
+ * - dummy A dummy value to fit the HarmonyAllocator interface
+ * - size The size of the allocation in bytes
+ * Returns
+ * - The allocated memory
+ */
+void *harmony_default_alloc(void *dummy, usize size);
+
+/**
+ * Calls realloc, checking for NULL in debug mode
+ *
+ * Parameters
+ * - dummy A dummy value to fit the HarmonyAllocator interface
+ * - allocation The allocation to resize
+ * - old_size The size of the original allocation in bytes
+ * - new_size The size of the new allocation in bytes
+ * Returns
+ * - The allocated memory
+ */
+void *harmony_default_realloc(void *dummy, void *allocation, usize old_size, usize new_size);
+
+/**
+ * Calls free
+ *
+ * Parameters
+ * - dummy A dummy value to fit the HarmonyAllocator interface
+ * - allocation The allocation to free
+ * - size The size of the allocation in bytes
+ */
+void harmony_default_free(void *dummy, void *allocation, usize size);
+
+/**
+ * Creates the interface for a HarmonyAllocator using malloc, realloc, and free
+ */
+HarmonyAllocator harmony_default_allocator(void);
+
+/**
  * An arena allocator
  *
  * Allocations are made very quickly, and are not freed individually, instead
@@ -262,6 +369,36 @@ bool harmony_pool_is_valid(HarmonyPool *pool);
 // hash set api : TODO
 
 #if defined(HARMONY_IMPLEMENTATION_CONTAINERS) || defined(HARMONY_IMPLEMENTATION_ALL)
+
+void *harmony_default_alloc(void *dummy, usize size) {
+    (void)dummy;
+    void *allocation = malloc(size);
+    harmony_assert(allocation != NULL);
+    return allocation;
+}
+
+void *harmony_default_realloc(void *dummy, void *allocation, usize old_size, usize new_size) {
+    (void)dummy;
+    (void)old_size;
+    void *new_allocation = realloc(allocation, new_size);
+    harmony_assert(new_allocation != NULL);
+    return new_allocation;
+}
+
+void harmony_default_free(void *dummy, void *allocation, usize size) {
+    (void)dummy;
+    (void)size;
+    free(allocation);
+}
+
+HarmonyAllocator harmony_default_allocator(void) {
+    return (HarmonyAllocator){
+        .data = NULL,
+        .alloc = (void *(*)(void *, usize))&harmony_default_alloc,
+        .realloc = (void *(*)(void *, void *, usize, usize))&harmony_default_realloc,
+        .free = (void (*)(void *, void *, usize))&harmony_default_free,
+    };
+}
 
 void *harmony_arena_alloc(HarmonyArena *arena, usize size) {
     harmony_assert(arena != NULL);

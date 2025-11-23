@@ -36,21 +36,18 @@ typedef struct HarmonyPlatform HarmonyPlatform;
 /**
  * Creates platform specific internal resources for audio, window, etc.
  *
- * Parameters
- * - allocator Where to allocate memory from
  * Returns
  * - An opaque pointer to the platform's resources
  */
-HarmonyPlatform *harmony_platform_init(const HarmonyAllocator *allocator);
+HarmonyPlatform *harmony_platform_create(void);
 
 /**
  * Destroys the platform specific internal resources
  *
  * Parameters
- * - allocator Where to free memory from
  * - platform The platform resources
  */
-void harmony_platform_shutdown(const HarmonyAllocator *allocator, HarmonyPlatform *platform);
+void harmony_platform_destroy(HarmonyPlatform *platform);
 
 /**
  * A key on the keyboard or button on the mouse
@@ -190,26 +187,21 @@ typedef struct HarmonyWindowConfig {
  * Creates a window
  *
  * Parameters
- * - allocator Where to get memory from, must not be NULL
  * - platform The platform resources, must not be NULL
  * - config The window configuration, must not be NULL
  * Returns
  * - The created window
  */
-HarmonyWindow harmony_window_create(
-    const HarmonyAllocator *allocator,
-    const HarmonyPlatform *platform,
-    const HarmonyWindowConfig *config);
+HarmonyWindow harmony_window_create(const HarmonyPlatform *platform, const HarmonyWindowConfig *config);
 
 /**
  * Destroys a window
  *
  * Parameters
- * - allocator Where to free memory from, must not be nULL
  * - platform The platform resources, must not be NULL
  * - window The window, must not be NULL
  */
-void harmony_window_destroy(const HarmonyAllocator *allocator, const HarmonyPlatform *platform, HarmonyWindow *window);
+void harmony_window_destroy(const HarmonyPlatform *platform, HarmonyWindow *window);
 
 /**
  * Processes all events since the last call to process events or startup
@@ -347,173 +339,15 @@ inline bool harmony_window_was_key_released(const HarmonyWindow *window, Harmony
     return window->keys_released[key];
 }
 
-#define HARMONY_MAKE_VULKAN_FUNC(name) PFN_##name name;
-
-/**
- * The vulkan function pointers that can be used
- */
-typedef struct HarmonyVulkanFuncs {
-    HARMONY_MAKE_VULKAN_FUNC(vkGetInstanceProcAddr)
-    HARMONY_MAKE_VULKAN_FUNC(vkGetDeviceProcAddr)
-
-    HARMONY_MAKE_VULKAN_FUNC(vkEnumerateInstanceExtensionProperties)
-    HARMONY_MAKE_VULKAN_FUNC(vkEnumerateInstanceLayerProperties)
-    HARMONY_MAKE_VULKAN_FUNC(vkCreateInstance)
-    HARMONY_MAKE_VULKAN_FUNC(vkDestroyInstance)
-
-    HARMONY_MAKE_VULKAN_FUNC(vkCreateDebugUtilsMessengerEXT)
-    HARMONY_MAKE_VULKAN_FUNC(vkDestroyDebugUtilsMessengerEXT)
-
-    HARMONY_MAKE_VULKAN_FUNC(vkEnumeratePhysicalDevices)
-    HARMONY_MAKE_VULKAN_FUNC(vkEnumerateDeviceExtensionProperties)
-    HARMONY_MAKE_VULKAN_FUNC(vkGetPhysicalDeviceQueueFamilyProperties)
-    HARMONY_MAKE_VULKAN_FUNC(vkGetPhysicalDeviceFeatures)
-
-    HARMONY_MAKE_VULKAN_FUNC(vkDestroySurfaceKHR)
-    HARMONY_MAKE_VULKAN_FUNC(vkCreateDevice)
-
-    HARMONY_MAKE_VULKAN_FUNC(vkDestroyDevice)
-    HARMONY_MAKE_VULKAN_FUNC(vkDeviceWaitIdle)
-
-    HARMONY_MAKE_VULKAN_FUNC(vkGetPhysicalDeviceSurfaceFormatsKHR)
-    HARMONY_MAKE_VULKAN_FUNC(vkGetPhysicalDeviceSurfacePresentModesKHR)
-    HARMONY_MAKE_VULKAN_FUNC(vkGetPhysicalDeviceSurfaceCapabilitiesKHR)
-    HARMONY_MAKE_VULKAN_FUNC(vkCreateSwapchainKHR)
-    HARMONY_MAKE_VULKAN_FUNC(vkDestroySwapchainKHR)
-    HARMONY_MAKE_VULKAN_FUNC(vkGetSwapchainImagesKHR)
-    HARMONY_MAKE_VULKAN_FUNC(vkAcquireNextImageKHR)
-
-    HARMONY_MAKE_VULKAN_FUNC(vkCreateSemaphore)
-    HARMONY_MAKE_VULKAN_FUNC(vkDestroySemaphore)
-    HARMONY_MAKE_VULKAN_FUNC(vkCreateFence)
-    HARMONY_MAKE_VULKAN_FUNC(vkDestroyFence)
-    HARMONY_MAKE_VULKAN_FUNC(vkResetFences)
-    HARMONY_MAKE_VULKAN_FUNC(vkWaitForFences)
-
-    HARMONY_MAKE_VULKAN_FUNC(vkGetDeviceQueue)
-    HARMONY_MAKE_VULKAN_FUNC(vkQueueWaitIdle)
-    HARMONY_MAKE_VULKAN_FUNC(vkQueueSubmit2)
-    HARMONY_MAKE_VULKAN_FUNC(vkQueuePresentKHR)
-
-    HARMONY_MAKE_VULKAN_FUNC(vkCreateCommandPool)
-    HARMONY_MAKE_VULKAN_FUNC(vkDestroyCommandPool)
-    HARMONY_MAKE_VULKAN_FUNC(vkAllocateCommandBuffers)
-    HARMONY_MAKE_VULKAN_FUNC(vkFreeCommandBuffers)
-
-    HARMONY_MAKE_VULKAN_FUNC(vkCreateDescriptorPool)
-    HARMONY_MAKE_VULKAN_FUNC(vkDestroyDescriptorPool)
-    HARMONY_MAKE_VULKAN_FUNC(vkResetDescriptorPool)
-    HARMONY_MAKE_VULKAN_FUNC(vkAllocateDescriptorSets)
-    HARMONY_MAKE_VULKAN_FUNC(vkUpdateDescriptorSets)
-
-    HARMONY_MAKE_VULKAN_FUNC(vkCreateDescriptorSetLayout)
-    HARMONY_MAKE_VULKAN_FUNC(vkDestroyDescriptorSetLayout)
-    HARMONY_MAKE_VULKAN_FUNC(vkCreatePipelineLayout)
-    HARMONY_MAKE_VULKAN_FUNC(vkDestroyPipelineLayout)
-    HARMONY_MAKE_VULKAN_FUNC(vkCreateShaderModule)
-    HARMONY_MAKE_VULKAN_FUNC(vkDestroyShaderModule)
-    HARMONY_MAKE_VULKAN_FUNC(vkCreateGraphicsPipelines)
-    HARMONY_MAKE_VULKAN_FUNC(vkCreateComputePipelines)
-    HARMONY_MAKE_VULKAN_FUNC(vkDestroyPipeline)
-
-    HARMONY_MAKE_VULKAN_FUNC(vkCreateBuffer)
-    HARMONY_MAKE_VULKAN_FUNC(vkDestroyBuffer)
-    HARMONY_MAKE_VULKAN_FUNC(vkCreateImage)
-    HARMONY_MAKE_VULKAN_FUNC(vkDestroyImage)
-    HARMONY_MAKE_VULKAN_FUNC(vkCreateImageView)
-    HARMONY_MAKE_VULKAN_FUNC(vkDestroyImageView)
-    HARMONY_MAKE_VULKAN_FUNC(vkCreateSampler)
-    HARMONY_MAKE_VULKAN_FUNC(vkDestroySampler)
-
-    HARMONY_MAKE_VULKAN_FUNC(vkGetPhysicalDeviceProperties)
-    HARMONY_MAKE_VULKAN_FUNC(vkGetPhysicalDeviceMemoryProperties)
-    HARMONY_MAKE_VULKAN_FUNC(vkGetBufferMemoryRequirements)
-    HARMONY_MAKE_VULKAN_FUNC(vkGetImageMemoryRequirements)
-
-    HARMONY_MAKE_VULKAN_FUNC(vkAllocateMemory)
-    HARMONY_MAKE_VULKAN_FUNC(vkFreeMemory)
-    HARMONY_MAKE_VULKAN_FUNC(vkBindBufferMemory)
-    HARMONY_MAKE_VULKAN_FUNC(vkBindImageMemory)
-    HARMONY_MAKE_VULKAN_FUNC(vkMapMemory)
-    HARMONY_MAKE_VULKAN_FUNC(vkUnmapMemory)
-    HARMONY_MAKE_VULKAN_FUNC(vkFlushMappedMemoryRanges)
-    HARMONY_MAKE_VULKAN_FUNC(vkInvalidateMappedMemoryRanges)
-
-    HARMONY_MAKE_VULKAN_FUNC(vkBeginCommandBuffer)
-    HARMONY_MAKE_VULKAN_FUNC(vkEndCommandBuffer)
-    HARMONY_MAKE_VULKAN_FUNC(vkResetCommandBuffer)
-
-    HARMONY_MAKE_VULKAN_FUNC(vkCmdCopyBuffer)
-    HARMONY_MAKE_VULKAN_FUNC(vkCmdCopyImage)
-    HARMONY_MAKE_VULKAN_FUNC(vkCmdBlitImage)
-    HARMONY_MAKE_VULKAN_FUNC(vkCmdCopyBufferToImage)
-    HARMONY_MAKE_VULKAN_FUNC(vkCmdCopyImageToBuffer)
-    HARMONY_MAKE_VULKAN_FUNC(vkCmdPipelineBarrier2)
-
-    HARMONY_MAKE_VULKAN_FUNC(vkCmdBeginRendering)
-    HARMONY_MAKE_VULKAN_FUNC(vkCmdEndRendering)
-    HARMONY_MAKE_VULKAN_FUNC(vkCmdSetViewport)
-    HARMONY_MAKE_VULKAN_FUNC(vkCmdSetScissor)
-    HARMONY_MAKE_VULKAN_FUNC(vkCmdBindPipeline)
-    HARMONY_MAKE_VULKAN_FUNC(vkCmdBindDescriptorSets)
-    HARMONY_MAKE_VULKAN_FUNC(vkCmdPushConstants)
-    HARMONY_MAKE_VULKAN_FUNC(vkCmdBindVertexBuffers)
-    HARMONY_MAKE_VULKAN_FUNC(vkCmdBindIndexBuffer)
-    HARMONY_MAKE_VULKAN_FUNC(vkCmdDraw)
-    HARMONY_MAKE_VULKAN_FUNC(vkCmdDrawIndexed)
-    HARMONY_MAKE_VULKAN_FUNC(vkCmdDispatch)
-} HarmonyVulkanFuncs;
-
-#undef HARMONY_MAKE_VULKAN_FUNC
-
-/**
- * Basic resources for use in Vulkan code
- */
-typedef struct HarmonyVulkan {
-    VkInstance instance;
-#ifndef NDEBUG
-    VkDebugUtilsMessengerEXT debug_messenger;
-#endif // NDEBUG
-    VkPhysicalDevice gpu;
-    VkDevice device;
-    u32 queue_family;
-
-    void *lib;
-    HarmonyVulkanFuncs pfn;
-} HarmonyVulkan;
-
-/**
- * Creates basic resources needed for Vulkan
- *
- * Debug messenger is created in debug mode only
- * Device has synchronization 2 and dynamic rendering features enabled
- *
- * Returns
- * - Created Vulkan resources
- */
-HarmonyVulkan harmony_vulkan_create(void);
-
-/**
- * Destroys basic resources for Vulkan
- *
- * All resources created with device or instance must be destroyed first
- *
- * Parameters
- * - vk The Harmony Vulkan context to destroy, must not be NULL
- */
-void harmony_vulkan_destroy(HarmonyVulkan *vk);
-
 /**
  * Creates a Vulkan instance with sensible defaults
  * 
  * In debug mode, enables debug messaging
  *
- * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
  * Returns
  * - The created VkInstance, should never be NULL
  */
-VkInstance harmony_vk_create_instance(const HarmonyVulkan *vk);
+VkInstance harmony_vk_create_instance(void);
 
 /**
  * Destroys a Vulkan instance
@@ -521,36 +355,36 @@ VkInstance harmony_vk_create_instance(const HarmonyVulkan *vk);
  * Parameters
  * - instance The VkInstance to destroy, must not be VK_NULL_HANDLE
  */
-void harmony_vk_destroy_instance(const HarmonyVulkan *vk, VkInstance instance);
+void harmony_vk_destroy_instance(VkInstance instance);
 
 /**
  * Creates a Vulkan debug messenger
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - instance The Vulkan instance, must not be VK_NULL_HANDLE
  * Returns
  * - The created debug messenger, should never be NULL
  */
-VkDebugUtilsMessengerEXT harmony_vk_create_debug_messenger(const HarmonyVulkan *vk);
+VkDebugUtilsMessengerEXT harmony_vk_create_debug_messenger(VkInstance instance);
 
 /**
  * Destroys a Vulkan debug messenger
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - instance The Vulkan instance, must not be VK_NULL_HANDLE
  * - messenger The debug messenger to destroy, must not be VK_NULL_HANDLE
  */
-void harmony_vk_destroy_debug_messenger(const HarmonyVulkan *vk, VkDebugUtilsMessengerEXT messenger);
+void harmony_vk_destroy_debug_messenger(VkInstance instance, VkDebugUtilsMessengerEXT messenger);
 
 /**
  * Finds a suitable Vulkan physical device
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - instance The Vulkan instance, must not be VK_NULL_HANDLE
  * Returns
  * - The found gpu, should never be VK_NULL_HANDLE
  */
-VkPhysicalDevice harmony_vk_find_physical_device(const HarmonyVulkan *vk);
+VkPhysicalDevice harmony_vk_find_physical_device(VkInstance instance);
 
 /**
  * Creates a Vulkan logical device with sensible defaults
@@ -558,42 +392,44 @@ VkPhysicalDevice harmony_vk_find_physical_device(const HarmonyVulkan *vk);
  * Enables sync 2 and dynamic rendering extensions
  * Creates 1 queue that supports graphics and compute
  *
+ * Note, Vulkan functions will be loaded using this device
+ *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - gpu The physical device, must not be VK_NULL_HANDLE
+ * - queue_family Which family to create the queue in
  * Returns
  * - The created Vulkan device, should never be VK_NULL_HANDLE
  */
-VkDevice harmony_vk_create_device(const HarmonyVulkan *vk);
+VkDevice harmony_vk_create_single_queue_device(VkPhysicalDevice gpu, u32 queue_family);
 
 /**
  * Destroy a Vulkan logical device
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
- * - device The Vulkan device to destroy
+ * - device The Vulkan device to destroy, must not be VK_NULL_HANDLE
  */
-void harmony_vk_destroy_device(const HarmonyVulkan *vk, VkDevice device);
+void harmony_vk_destroy_device(VkDevice device);
 
 /**
  * Waits for the device to idle
  *
  * Paramaters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  */
-void harmony_vk_device_wait(const HarmonyVulkan *vk);
+void harmony_vk_wait_for_device(VkDevice device);
 
 /**
  * Create a Vulkan surface for the window, according to the platform
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - instance The Vulkan instance, must not be VK_NULL_HANDLE
  * - platform The Harmony platform context, must not be NULL
  * - window The window to create a surface for, must not be NULL
  * Returns
  * - The created Vulkan surface
  */
 VkSurfaceKHR harmony_vk_create_surface(
-    const HarmonyVulkan *vk,
+    VkInstance instance,
     const HarmonyPlatform *platform,
     const HarmonyWindow *window);
 
@@ -601,16 +437,17 @@ VkSurfaceKHR harmony_vk_create_surface(
  * Destroys a Vulkan surface
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - instance The Vulkan instance, must not be VK_NULL_HANDLE
  * - surface The surface to destroy, must not be VK_NULL_HANDLE
  */
-void harmony_vk_destroy_surface(const HarmonyVulkan *vk, VkSurfaceKHR surface);
+void harmony_vk_destroy_surface(VkInstance instance, VkSurfaceKHR surface);
 
 /**
  * Creates a Vulkan swapchain
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
+ * - gpu The physical device to query capabilities, must not be VK_NULL_HANDLE
  * - width A pointer to store the width of the swapchain, must not be NULL
  * - height A pointer to store the height of the swapchain, must not be NULL
  * - format A pointer to store the format of the swapchain, must not be NULL
@@ -622,7 +459,8 @@ void harmony_vk_destroy_surface(const HarmonyVulkan *vk, VkSurfaceKHR surface);
  * - The created Vulkan swapchain
  */
 VkSwapchainKHR harmony_vk_create_swapchain(
-    const HarmonyVulkan *vk,
+    VkDevice device,
+    VkPhysicalDevice gpu,
     u32 *width,
     u32 *height,
     VkFormat *format,
@@ -635,39 +473,39 @@ VkSwapchainKHR harmony_vk_create_swapchain(
  * Destroys a Vulkan swapchain
  *
  * Parameters
- * - vk The harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - swapchain The swapchain to destroy, must not be VK_NULL_HANDLE
  */
-void harmony_vk_destroy_swapchain(const HarmonyVulkan *vk, VkSwapchainKHR swapchain);
+void harmony_vk_destroy_swapchain(VkDevice device, VkSwapchainKHR swapchain);
 
 /**
  * Query the number of images in a swapchain
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - swapchain The swapchain to query, must not be VK_NULL_HANDLE
  * Returns
  * - The number of images in the swapchain
  */
-u32 harmony_vk_get_swapchain_image_count(const HarmonyVulkan *vk, VkSwapchainKHR swapchain);
+u32 harmony_vk_get_swapchain_image_count(VkDevice device, VkSwapchainKHR swapchain);
 
 /**
  * Gets the images from a swapchain
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - swapchain The swapchain to get the images from, must not be VK_NULL_HANDLE
  * - images A buffer to store the images in, must not be NULL
  * - count The number of images, must be equal to the number the swapchain has
  */
-void harmony_vk_get_swapchain_images(const HarmonyVulkan *vk, VkSwapchainKHR swapchain, VkImage *images, u32 count);
+void harmony_vk_get_swapchain_images(VkDevice device, VkSwapchainKHR swapchain, VkImage *images, u32 count);
 
 /**
  * Gets the index of the next image in the Swapchain, signaling a semaphore
  * and/or fence when it becomes available
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - swapchain The swapchain to get from, must not be VK_NULL_HANDLE
  * - signal_semaphore The semaphore to signal, may be VK_NULL_HANDLE
  * - signal_fence The fence to signal, may be VK_NULL_HANDLE
@@ -675,7 +513,7 @@ void harmony_vk_get_swapchain_images(const HarmonyVulkan *vk, VkSwapchainKHR swa
  * - The index of the next image
  */
 u32 harmony_vk_acquire_next_image(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkSwapchainKHR swapchain,
     VkSemaphore signal_semaphore,
     VkFence signal_fence);
@@ -684,7 +522,6 @@ u32 harmony_vk_acquire_next_image(
  * Presents the swapchain to the display
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
  * - queue The queue to use to present, must not be VK_NULL_HANDLE
  * - swapchain The swapchain to present, must not be VK_NULL_HANDLE
  * - image_index The image in the swapchain
@@ -692,7 +529,6 @@ u32 harmony_vk_acquire_next_image(
  * - semaphore_count The number of semaphores in wait_semaphores, may be 0
  */
 void harmony_vk_present(
-    const HarmonyVulkan *vk,
     VkQueue queue,
     VkSwapchainKHR swapchain,
     u32 image_index,
@@ -703,84 +539,86 @@ void harmony_vk_present(
  * Creates a Vulkan semaphore
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - flags The optional flags to use
  * Returns
  * - The created Vulkan semaphore
  */
-VkSemaphore harmony_vk_create_semaphore(const HarmonyVulkan *vk, VkSemaphoreCreateFlags flags);
+VkSemaphore harmony_vk_create_semaphore(VkDevice device, VkSemaphoreCreateFlags flags);
 
 /**
  * Destroys a Vulkan semaphore
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - semaphore The Vulkan semaphore to destroy
  */
-void harmony_vk_destroy_semaphore(const HarmonyVulkan *vk, VkSemaphore semaphore);
+void harmony_vk_destroy_semaphore(VkDevice device, VkSemaphore semaphore);
 
 /**
  * Creates a Vulkan fence
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - flags The optional flags to use
  * Returns
  * - The created Vulkan fence
  */
-VkFence harmony_vk_create_fence(const HarmonyVulkan *vk, VkFenceCreateFlags flags);
+VkFence harmony_vk_create_fence(VkDevice device, VkFenceCreateFlags flags);
 
 /**
  * Destroys a Vulkan fence
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - semaphore The Vulkan fence to destroy
  */
-void harmony_vk_destroy_fence(const HarmonyVulkan *vk, VkFence fence);
+void harmony_vk_destroy_fence(VkDevice device, VkFence fence);
 
 /**
  * Waits for Vulkan fences to be signaled
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - fences The fences to wait for, must not be NULL
  * - count The number of fences, must be greater than 0
  */
-void harmony_vk_wait_for_fences(const HarmonyVulkan *vk, VkFence *fences, u32 count);
+void harmony_vk_wait_for_fences(VkDevice device, VkFence *fences, u32 count);
 
 /**
  * Resets (unsignals) fences
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - fences The fences to reset, must not be NULL
  * - count The number of fences, must be greater than 0
  */
-void harmony_vk_reset_fences(const HarmonyVulkan *vk, VkFence *fences, u32 count);
+void harmony_vk_reset_fences(VkDevice device, VkFence *fences, u32 count);
 
 /**
  * Find the first queue family index which supports the the queue flags
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - gpu The physical device, must not be VK_NULL_HANDLE
  * - queue_family A pointer to store the found queue family, must not be NULL
  * - queue_flags The flags required of the queue family
  * Returns
  * - true if a family was found
  * - false if none could be found
  */
-bool harmony_vk_find_queue_family(const HarmonyVulkan *vk, u32 *queue_family, VkQueueFlags queue_flags);
+bool harmony_vk_find_queue_family(VkPhysicalDevice gpu, u32 *queue_family, VkQueueFlags queue_flags);
 
 /**
- * Gets the created queue from the device
+ * Gets a created queue from the device
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
+ * - queue_family The queue_family to get from
+ * - queue_index The index within the family
  * Returns
  * - The queue, should never be VK_NULL_HANDLE
  */
-VkQueue harmony_vk_get_queue(const HarmonyVulkan *vk);
+VkQueue harmony_vk_get_queue(VkDevice device, u32 queue_family, u32 queue_index);
 
 /**
  * Wait for a queue to finish commands
@@ -788,21 +626,33 @@ VkQueue harmony_vk_get_queue(const HarmonyVulkan *vk);
  * Can be used to ensure resources are free before destruction
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - queue The Vulkan queue to wait for
  */
-void harmony_vk_queue_wait(const HarmonyVulkan *vk, VkQueue queue);
+void harmony_vk_queue_wait(VkDevice device, VkQueue queue);
+
+/**
+ * Submits a command buffer for execution
+ *
+ * Parameters
+ * - queue The queue to submit to, must not be VK_NULL_HANDLE
+ * - submits The submissions, must not be NULL
+ * - submit_count The number of submissions, must be greater than 0
+ * - fence The optional fence to signal upon completion, may be VK_NULL_HANDLE
+ */
+void harmony_vk_queue_submit(VkQueue queue, VkSubmitInfo *submits, u32 submit_count, VkFence fence);
 
 /**
  * Creates a Vulkan command pool
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
+ * - queue_family The index of the queue family to allocate in
  * - flags The optional flags to use
  * Returns
  * - The created Vulkan command pool, should never be VK_NULL_HANDLE
  */
-VkCommandPool harmony_vk_create_command_pool(const HarmonyVulkan *vk, VkCommandPoolCreateFlags flags);
+VkCommandPool harmony_vk_create_command_pool(VkDevice device, u32 queue_family, VkCommandPoolCreateFlags flags);
 
 /**
  * Destroys a Vulkan command pool
@@ -811,43 +661,35 @@ VkCommandPool harmony_vk_create_command_pool(const HarmonyVulkan *vk, VkCommandP
  * - vk The Harmony Vulkan context, must not be VK_NULL_HANDLE
  * - pool The Vulkan command pool to destroy
  */
-void harmony_vk_destroy_command_pool(const HarmonyVulkan *vk, VkCommandPool pool);
+void harmony_vk_destroy_command_pool(VkDevice device, VkCommandPool pool);
 
 /**
  * Creates Vulkan commands buffers, filling a buffer
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - pool The command pool to allocate from, must not be VK_NULL_HANDLE
  * - cmds A pointer to store the created command buffers, must not be NULL
  * - count The size of cmds and the number of command buffers to create
  */
-void harmony_vk_allocate_command_buffers(
-    const HarmonyVulkan *vk,
-    VkCommandPool pool,
-    VkCommandBuffer *cmds,
-    u32 count);
+void harmony_vk_allocate_command_buffers(VkDevice device, VkCommandPool pool, VkCommandBuffer *cmds, u32 count);
 
 /**
  * Frees Vulkan commands buffers
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - pool The command pool to free to, must not be VK_NULL_HANDLE
  * - cmds The command buffers to free, must not be NULL
  * - count The size of cmds and the number of command buffers to free
  */
-void harmony_vk_free_command_buffers(
-    const HarmonyVulkan *vk,
-    VkCommandPool pool,
-    VkCommandBuffer *cmds,
-    u32 count);
+void harmony_vk_free_command_buffers(VkDevice device, VkCommandPool pool, VkCommandBuffer *cmds, u32 count);
 
 /**
  * Creates a Vulkan descriptor pool
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - max_sets The maximum number of sets which can be allocated
  * - sizes The numbers of each descriptor type to allocate, must not be NULL
  * - count The count of sizes, must be greater than 0
@@ -855,7 +697,7 @@ void harmony_vk_free_command_buffers(
  * - The created Vulkan descriptor pool, should never be VK_NULL_HANDLE
  */
 VkDescriptorPool harmony_vk_create_descriptor_pool(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     u32 max_sets,
     VkDescriptorPoolSize *sizes,
     u32 count);
@@ -864,32 +706,32 @@ VkDescriptorPool harmony_vk_create_descriptor_pool(
  * Destroys a Vulkan descriptor pool
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - pool The Vulkan descriptor pool to destroy, must not be VK_NULL_HANDLE
  */
-void harmony_vk_destroy_descriptor_pool(const HarmonyVulkan *vk, VkDescriptorPool pool);
+void harmony_vk_destroy_descriptor_pool(VkDevice device, VkDescriptorPool pool);
 
 /**
  * Resets a Vulkan descriptor pool, freeing all sets
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - pool The descriptor pool to reset, must not be VK_NULL_HANDLE
  */
-void harmony_vk_reset_descriptor_pool(const HarmonyVulkan *vk, VkDescriptorPool pool);
+void harmony_vk_reset_descriptor_pool(VkDevice device, VkDescriptorPool pool);
 
 /**
  * Allocates Vulkan descriptor sets from a descriptor pool
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - pool The descriptor pool to allocate from, must not be VK_NULL_HANDLE
  * - layouts The layouts of the sets to allocate, must not be NULL
  * - sets A pointer to store the allocated sets, must not be NULL
  * - count The number of sets to allocate, must be greater than 0
  */
 bool harmony_vk_allocate_descriptor_sets(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkDescriptorPool pool,
     VkDescriptorSetLayout *layouts,
     VkDescriptorSet *sets,
@@ -899,12 +741,12 @@ bool harmony_vk_allocate_descriptor_sets(
  * Creates a Vulkan descriptor set layout
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - bindings Descriptions of each binding in the layout, must not be NULL
  * - count The number of bindings, must be greater than 0
  */
 VkDescriptorSetLayout harmony_vk_create_descriptor_set_layout(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     const VkDescriptorSetLayoutBinding *bindings,
     u32 count);
 
@@ -912,16 +754,16 @@ VkDescriptorSetLayout harmony_vk_create_descriptor_set_layout(
  * Destroys a Vulkan descriptor set layout
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - layout The layout to destroy, must not be VK_NULL_HANDLE
  */
-void harmony_vk_destroy_descriptor_set_layout(const HarmonyVulkan *vk, VkDescriptorSetLayout layout);
+void harmony_vk_destroy_descriptor_set_layout(VkDevice device, VkDescriptorSetLayout layout);
 
 /**
  * Creates a Vulkan pipeline layout
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - layouts The descriptor set layouts to include, may be NULL if none
  * - layout_count The number of descriptor set layouts, may be 0
  * - push_constants The push constant ranges to include, may be NULL
@@ -930,7 +772,7 @@ void harmony_vk_destroy_descriptor_set_layout(const HarmonyVulkan *vk, VkDescrip
  * - The created Vulkan pipeline layout, should never be VK_NULL_HANDLE
  */
 VkPipelineLayout harmony_vk_create_pipeline_layout(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     const VkDescriptorSetLayout* layouts,
     u32 layout_count,
     const VkPushConstantRange* push_constants,
@@ -941,31 +783,31 @@ VkPipelineLayout harmony_vk_create_pipeline_layout(
  * Destroys a Vulkan pipeline layout
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - layout The layout to destroy, must not be VK_NULL_HANDLE
  */
-void harmony_vk_destroy_pipeline_layout(const HarmonyVulkan *vk, VkPipelineLayout layout);
+void harmony_vk_destroy_pipeline_layout(VkDevice device, VkPipelineLayout layout);
 
 /**
  * Creates a Vulkan shader module
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - code The SPIR-V bytecode of the shader, must not be NULL
  * - size The size of the bytecode in bytes, must be greater than 0
  * Returns
  * - The created Vulkan shader module, should never be VK_NULL_HANDLE
  */
-VkShaderModule harmony_vk_create_shader_module(const HarmonyVulkan *vk, const u8 *code, usize size);
+VkShaderModule harmony_vk_create_shader_module(VkDevice device, const u8 *code, usize size);
 
 /**
  * Destroys a Vulkan shader module
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - shader_module The shader module to destroy, must not be VK_NULL_HANDLE
  */
-void harmony_vk_destroy_shader_module(const HarmonyVulkan *vk, VkShaderModule shader_module);
+void harmony_vk_destroy_shader_module(VkDevice device, VkShaderModule shader_module);
 
 /**
  * Configuration for Vulkan pipelines
@@ -1037,53 +879,53 @@ typedef struct HarmonyVkPipelineConfig {
  * Creates a graphics pipeline
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - config The pipeline configuration, must not be NULL
  * Returns
  * - The created graphics pipeline, should never be VK_NULL_HANDLE
  */
-VkPipeline harmony_vk_create_graphics_pipeline(const HarmonyVulkan *vk, const HarmonyVkPipelineConfig *config);
+VkPipeline harmony_vk_create_graphics_pipeline(VkDevice device, const HarmonyVkPipelineConfig *config);
 
 /**
  * Creates a compute pipeline
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - config The pipeline configuration, must not be NULL
  * Returns
  * - The created compute pipeline, should never be VK_NULL_HANDLE
  */
-VkPipeline harmony_vk_create_compute_pipeline(const HarmonyVulkan *vk, const HarmonyVkPipelineConfig *config);
+VkPipeline harmony_vk_create_compute_pipeline(VkDevice device, const HarmonyVkPipelineConfig *config);
 
 /**
  * Destroys a Vulkan pipeline
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - pipeline The pipeline to destroy, must not be VK_NULL_HANDLE
  */
-void harmony_vk_destroy_pipeline(const HarmonyVulkan *vk, VkPipeline pipeline);
+void harmony_vk_destroy_pipeline(VkDevice device, VkPipeline pipeline);
 
 /**
  * Creates a Vulkan buffer
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - size The size of the buffer in bytes, must be greater than 0
  * - usage The usage flags for the buffer
  * Returns
  * - The created Vulkan buffer, should never be VK_NULL_HANDLE
  */
-VkBuffer harmony_vk_create_buffer(const HarmonyVulkan *vk, usize size, VkBufferUsageFlags usage);
+VkBuffer harmony_vk_create_buffer(VkDevice device, usize size, VkBufferUsageFlags usage);
 
 /**
  * Destroys a Vulkan buffer
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - buffer The buffer to destroy, must not be VK_NULL_HANDLE
  */
-void harmony_vk_destroy_buffer(const HarmonyVulkan *vk, VkBuffer buffer);
+void harmony_vk_destroy_buffer(VkDevice device, VkBuffer buffer);
 
 /**
  * Configuration for a Vulkan image
@@ -1137,21 +979,21 @@ typedef struct HarmonyVkImageConfig {
  * Creates a Vulkan image
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - config Configuration describing the image, must not be NULL
  * Returns
  * - The created Vulkan image, should never be VK_NULL_HANDLE
  */
-VkImage harmony_vk_create_image(const HarmonyVulkan *vk, const HarmonyVkImageConfig *config);
+VkImage harmony_vk_create_image(VkDevice device, const HarmonyVkImageConfig *config);
 
 /**
  * Destroys a Vulkan image
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - image The Vulkan image to destroy, must not be VK_NULL_HANDLE
  */
-void harmony_vk_destroy_image(const HarmonyVulkan *vk, VkImage image);
+void harmony_vk_destroy_image(VkDevice device, VkImage image);
 
 /**
  * Configuration for a Vulkan image view
@@ -1191,14 +1033,14 @@ typedef struct HarmonyVkImageViewConfig {
  * Creates an image view for a Vulkan image
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - image The image to view, must not be VK_NULL_HANDLE
  * - config The view configuration, must not be NULL
  * Returns
  * - The created image view, should never be VK_NULL_HANDLE
  */
 VkImageView harmony_vk_create_image_view(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkImage image,
     HarmonyVkImageViewConfig *config);
 
@@ -1206,59 +1048,60 @@ VkImageView harmony_vk_create_image_view(
  * Destroys a Vulkan image view
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - image_view The image view to destroy, must not be VK_NULL_HANDLE
  */
-void harmony_vk_destroy_image_view(const HarmonyVulkan *vk, VkImageView image_view);
+void harmony_vk_destroy_image_view(VkDevice device, VkImageView image_view);
 
 /**
  * Creates a Vulkan sampler
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - filter The filtering method to use
  * - edge_mode The addressing mode for texture edges
  * Returns
  * - The created sampler, should never be VK_NULL_HANDLE
  */
-VkSampler harmony_vk_create_sampler(const HarmonyVulkan *vk, VkFilter filter, VkSamplerAddressMode edge_mode);
+VkSampler harmony_vk_create_sampler(VkDevice device, VkFilter filter, VkSamplerAddressMode edge_mode);
 
 /**
  * Destroys a Vulkan sampler
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - sampler The Vulkan sampler to destroy, must not be VK_NULL_HANDLE
  */
-void harmony_vk_destroy_sampler(const HarmonyVulkan *vk, VkSampler sampler);
+void harmony_vk_destroy_sampler(VkDevice device, VkSampler sampler);
 
 /**
  * Gets memory requirements for a buffer
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - buffer The buffer to query, must not be VK_NULL_HANDLE
  * Returns
  * - The memory requirements for the buffer
  */
-VkMemoryRequirements harmony_vk_get_buffer_mem_reqs(const HarmonyVulkan *vk, VkBuffer buffer);
+VkMemoryRequirements harmony_vk_get_buffer_mem_reqs(VkDevice device, VkBuffer buffer);
 
 /**
  * Gets memory requirements for an image
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - image The image to query, must not be VK_NULL_HANDLE
  * Returns
  * - The memory requirements for the image
  */
-VkMemoryRequirements harmony_vk_get_image_mem_reqs(const HarmonyVulkan *vk, VkImage image);
+VkMemoryRequirements harmony_vk_get_image_mem_reqs(VkDevice device, VkImage image);
 
 /**
  * Allocates device memory matching the requirements
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
+ * - gpu The physical device to query memory types
  * - mem_reqs The required memory properties, must not be NULL
  * - desired_flags The flags the memory should have
  * - undesired_flags Flags that the memory should avoid
@@ -1266,7 +1109,8 @@ VkMemoryRequirements harmony_vk_get_image_mem_reqs(const HarmonyVulkan *vk, VkIm
  * - The allocated memory, should never be VK_NULL_HANDLE
  */
 VkDeviceMemory harmony_vk_allocate_memory(
-    const HarmonyVulkan *vk,
+    VkDevice device,
+    VkPhysicalDevice gpu,
     VkMemoryRequirements *mem_reqs,
     VkMemoryPropertyFlags desired_flags,
     VkMemoryPropertyFlags undesired_flags);
@@ -1275,101 +1119,101 @@ VkDeviceMemory harmony_vk_allocate_memory(
  * Frees device memory
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - memory The memory to free, may be VK_NULL_HANDLE
  */
-void harmony_vk_free_memory(const HarmonyVulkan *vk, VkDeviceMemory memory);
+void harmony_vk_free_memory(VkDevice device, VkDeviceMemory memory);
 
 /**
  * Binds device memory to a buffer
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - buffer The buffer to bind to, must not be VK_NULL_HANDLE
  * - memory The memory to bind, must not be VK_NULL_HANDLE
  * - offset Offset into memory
  */
-void harmony_vk_bind_buffer_memory(const HarmonyVulkan *vk, VkBuffer buffer, VkDeviceMemory memory, usize offset);
+void harmony_vk_bind_buffer_memory(VkDevice device, VkBuffer buffer, VkDeviceMemory memory, usize offset);
 
 /**
  * Binds device memory to an image
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - image The image to bind to, must not be VK_NULL_HANDLE
  * - memory The memory to bind, must not be VK_NULL_HANDLE
  * - offset Offset into memory
  */
-void harmony_vk_bind_image_memory(const HarmonyVulkan *vk, VkImage image, VkDeviceMemory memory, usize offset);
+void harmony_vk_bind_image_memory(VkDevice device, VkImage image, VkDeviceMemory memory, usize offset);
 
 /**
  * Maps device memory for CPU access
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - memory The memory to map, must not be VK_NULL_HANDLE
  * - offset The offset into memory
  * - size The region to map, must be greater than 0
  * Returns
  * - A pointer to mapped memory, never NULL unless mapping failed
  */
-void *harmony_vk_map_memory(const HarmonyVulkan *vk, VkDeviceMemory memory, usize offset, usize size);
+void *harmony_vk_map_memory(VkDevice device, VkDeviceMemory memory, usize offset, usize size);
 
 /**
  * Unmaps device memory
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - memory The memory to unmap, must not be VK_NULL_HANDLE
  */
-void harmony_vk_unmap_memory(const HarmonyVulkan *vk, VkDeviceMemory memory);
+void harmony_vk_unmap_memory(VkDevice device, VkDeviceMemory memory);
 
 /**
  * Flushes a range of device memory to make host writes visible to the GPU
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - memory The memory to flush, must not be VK_NULL_HANDLE
  * - offset Offset into the memory
  * - size Size of the memory region to flush, must be greater than 0
  */
-void harmony_vk_flush_memory(const HarmonyVulkan *vk, VkDeviceMemory memory, usize offset, usize size);
+void harmony_vk_flush_memory(VkDevice device, VkDeviceMemory memory, usize offset, usize size);
 
 /**
  * Invalidates a range of device memory to make GPU writes visible to the CPU
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - memory The memory to invalidate, must not be VK_NULL_HANDLE
  * - offset Offset into the memory
  * - size Size of the memory region to invalidate, must be greater than 0
  */
-void harmony_vk_invalidate_memory(const HarmonyVulkan *vk, VkDeviceMemory memory, usize offset, usize size);
+void harmony_vk_invalidate_memory(VkDevice device, VkDeviceMemory memory, usize offset, usize size);
 
 /**
  * Begins recording a command buffer
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer to begin recording, must not be VK_NULL_HANDLE
  * - flags Optional usage flags
  */
-void harmony_vk_begin_cmd(const HarmonyVulkan *vk, VkCommandBuffer cmd, VkCommandBufferUsageFlags flags);
+void harmony_vk_begin_cmd(VkDevice device, VkCommandBuffer cmd, VkCommandBufferUsageFlags flags);
 
 /**
  * Ends recording of a command buffer
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer to finish, must not be VK_NULL_HANDLE
  */
-void harmony_vk_end_cmd(const HarmonyVulkan *vk, VkCommandBuffer cmd);
+void harmony_vk_end_cmd(VkDevice device, VkCommandBuffer cmd);
 
 /**
  * Copies data from one buffer to another
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer to write the command to, must not be VK_NULL_HANDLE
  * - dst The destination buffer, must not be VK_NULL_HANDLE
  * - src The source buffer, must not be VK_NULL_HANDLE
@@ -1377,7 +1221,7 @@ void harmony_vk_end_cmd(const HarmonyVulkan *vk, VkCommandBuffer cmd);
  * - region_count Number of regions, must be greater than 0
  */
 void harmony_vk_copy_buffer(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     VkBuffer dst,
     VkBuffer src,
@@ -1388,7 +1232,7 @@ void harmony_vk_copy_buffer(
  * Copies data from one image to another
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer to write to, must not be VK_NULL_HANDLE
  * - dst The destination image, must not be VK_NULL_HANDLE
  * - src The source image, must not be VK_NULL_HANDLE
@@ -1396,7 +1240,7 @@ void harmony_vk_copy_buffer(
  * - region_count Number of copy regions, must be greater than 0
  */
 void harmony_vk_copy_image(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     VkImage dst,
     VkImage src,
@@ -1407,7 +1251,7 @@ void harmony_vk_copy_image(
  * Performs a blit between images
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer to write to, must not be VK_NULL_HANDLE
  * - dst The destination image, must not be VK_NULL_HANDLE
  * - src The source image, must not be VK_NULL_HANDLE
@@ -1416,7 +1260,7 @@ void harmony_vk_copy_image(
  * - filter The filtering method to use
  */
 void harmony_vk_blit_image(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     VkImage dst,
     VkImage src,
@@ -1428,7 +1272,7 @@ void harmony_vk_blit_image(
  * Copies data from a buffer to an image
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer, must not be VK_NULL_HANDLE
  * - dst The destination image, must not be VK_NULL_HANDLE
  * - src The source buffer, must not be VK_NULL_HANDLE
@@ -1436,7 +1280,7 @@ void harmony_vk_blit_image(
  * - region_count Count of regions, must be greater than 0
  */
 void harmony_vk_copy_buffer_to_image(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     VkImage dst,
     VkBuffer src,
@@ -1447,7 +1291,7 @@ void harmony_vk_copy_buffer_to_image(
  * Copies data from an image to a buffer
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer, must not be VK_NULL_HANDLE
  * - dst The destination buffer, must not be VK_NULL_HANDLE
  * - src The source image, must not be VK_NULL_HANDLE
@@ -1455,7 +1299,7 @@ void harmony_vk_copy_buffer_to_image(
  * - region_count Count of regions, must be greater than 0
  */
 void harmony_vk_copy_image_to_buffer(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     VkBuffer dst,
     VkImage src,
@@ -1466,36 +1310,36 @@ void harmony_vk_copy_image_to_buffer(
  * Inserts a pipeline barrier using Vulkan synchronization2
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer to write to, must not be VK_NULL_HANDLE
  * - dependencies The dependency info, must not be NULL
  */
-void harmony_vk_pipeline_barrier(const HarmonyVulkan *vk, VkCommandBuffer cmd, const VkDependencyInfo *dependencies);
+void harmony_vk_pipeline_barrier(VkDevice device, VkCommandBuffer cmd, const VkDependencyInfo *dependencies);
 
 /**
  * Begins a dynamic rendering pass
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer, must not be VK_NULL_HANDLE
  * - info The rendering info, must not be NULL
  */
-void harmony_vk_begin_rendering(const HarmonyVulkan *vk, VkCommandBuffer cmd, const VkRenderingInfo *info);
+void harmony_vk_begin_rendering(VkDevice device, VkCommandBuffer cmd, const VkRenderingInfo *info);
 
 /**
  * Ends a dynamic rendering pass
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer, must not be VK_NULL_HANDLE
  */
-void harmony_vk_end_rendering(const HarmonyVulkan *vk, VkCommandBuffer cmd);
+void harmony_vk_end_rendering(VkDevice device, VkCommandBuffer cmd);
 
 /**
  * Sets the viewport dynamically
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer to write the command to, must not be VK_NULL_HANDLE
  * - x Left coordinate of viewport
  * - y Top coordinate of viewport
@@ -1505,7 +1349,7 @@ void harmony_vk_end_rendering(const HarmonyVulkan *vk, VkCommandBuffer cmd);
  * - far Maximum depth value
  */
 void harmony_vk_set_viewport(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     float x,
     float y,
@@ -1518,26 +1362,26 @@ void harmony_vk_set_viewport(
  * Sets the scissor rectangle dynamically
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer to write to, must not be VK_NULL_HANDLE
  * - x Left coordinate of scissor
  * - y Top coordinate of scissor
  * - width Width of scissor
  * - height Height of scissor
  */
-void harmony_vk_set_scissor(const HarmonyVulkan *vk, VkCommandBuffer cmd, i32 x, i32 y, u32 width, u32 height);
+void harmony_vk_set_scissor(VkDevice device, VkCommandBuffer cmd, i32 x, i32 y, u32 width, u32 height);
 
 /**
  * Binds a pipeline to a command buffer
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer to bind to, must not be VK_NULL_HANDLE
  * - pipeline The Vulkan pipeline to bind, must not be VK_NULL_HANDLE
  * - bind_point Graphics or compute bind point
  */
 void harmony_vk_bind_pipeline(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     VkPipeline pipeline,
     VkPipelineBindPoint bind_point
@@ -1547,7 +1391,7 @@ void harmony_vk_bind_pipeline(
  * Binds descriptor sets to a pipeline
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer, must not be VK_NULL_HANDLE
  * - layout The pipeline layout, must not be VK_NULL_HANDLE
  * - bind_point Graphics or compute bind point
@@ -1556,7 +1400,7 @@ void harmony_vk_bind_pipeline(
  * - descriptor_sets The descriptor sets to bind, must not be NULL
  */
 void harmony_vk_bind_descriptor_sets(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     VkPipelineLayout layout,
     VkPipelineBindPoint bind_point,
@@ -1568,7 +1412,7 @@ void harmony_vk_bind_descriptor_sets(
  * Pushes constant values into the command buffer
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer, must not be VK_NULL_HANDLE
  * - layout The pipeline layout, must not be VK_NULL_HANDLE
  * - stages Shader stages to update
@@ -1577,7 +1421,7 @@ void harmony_vk_bind_descriptor_sets(
  * - data Pointer to constant data, must not be NULL
  */
 void harmony_vk_push_constants(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     VkPipelineLayout layout,
     VkShaderStageFlags stages,
@@ -1589,7 +1433,7 @@ void harmony_vk_push_constants(
  * Binds multiple vertex buffers
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer, must not be VK_NULL_HANDLE
  * - begin_index First binding index
  * - count Number of vertex buffers, must be greater than 0
@@ -1597,7 +1441,7 @@ void harmony_vk_push_constants(
  * - offsets Byte offsets for each buffer, must not be NULL
  */
 void harmony_vk_bind_vertex_buffers(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     u32 begin_index,
     u32 count,
@@ -1608,24 +1452,24 @@ void harmony_vk_bind_vertex_buffers(
  * Binds a single vertex buffer
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer, must not be VK_NULL_HANDLE
  * - vertex_buffer The vertex buffer to bind, must not be VK_NULL_HANDLE
  */
-void harmony_vk_bind_vertex_buffer(const HarmonyVulkan *vk, VkCommandBuffer cmd, VkBuffer vertex_buffer);
+void harmony_vk_bind_vertex_buffer(VkDevice device, VkCommandBuffer cmd, VkBuffer vertex_buffer);
 
 /**
  * Binds an index buffer for indexed drawing
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer, must not be VK_NULL_HANDLE
  * - index_buffer The buffer containing indices, must not be VK_NULL_HANDLE
  * - offset Byte offset into the index buffer
  * - type The index type
  */
 void harmony_vk_bind_index_buffer(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     VkBuffer index_buffer,
     usize offset,
@@ -1635,7 +1479,7 @@ void harmony_vk_bind_index_buffer(
  * Draws the vertices to the framebuffer
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer to write, must not be VK_NULL_HANDLE
  * - first_vertex The beginning vertex in the vertex buffer to use
  * - vertex_count The number of vertices to read, must be greater than 0
@@ -1643,7 +1487,7 @@ void harmony_vk_bind_index_buffer(
  * - instance_count The number of instances to draw, must be greater than 0
  */
 void harmony_vk_draw(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     u32 first_vertex,
     u32 vertex_count,
@@ -1654,7 +1498,7 @@ void harmony_vk_draw(
  * Draws the vertices to the framebuffer, using an index buffer
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer to write, must not be VK_NULL_HANDLE
  * - vertex_offset The offset into the vertices
  * - first_index The beginning index in the index buffer to use
@@ -1663,7 +1507,7 @@ void harmony_vk_draw(
  * - instance_count The number of instances to draw, must be greater than 0
  */
 void harmony_vk_draw_indexed(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     u32 vertex_offset,
     u32 first_index,
@@ -1675,15 +1519,17 @@ void harmony_vk_draw_indexed(
  * Dispatches the bound compute shader
  *
  * Parameters
- * - vk The Harmony Vulkan context, must not be NULL
+ * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer to write, must not be VK_NULL_HANDLE
  * - x The number of local workgroups in the x direction
  * - y The number of local workgroups in the x direction
  * - z The number of local workgroups in the x direction
  */
-void harmony_vk_dispatch(const HarmonyVulkan *vk, VkCommandBuffer cmd, u32 x, u32 y, u32 z);
+void harmony_vk_dispatch(VkDevice device, VkCommandBuffer cmd, u32 x, u32 y, u32 z);
 
 #if defined(HARMONY_IMPLEMENTATION_GRAPHICS) || defined(HARMONY_IMPLEMENTATION_ALL)
+
+#define HARMONY_MAKE_VULKAN_FUNC(name) PFN_##name name;
 
 #ifdef __linux__
 
@@ -1718,8 +1564,8 @@ struct HarmonyPlatform {
     = harmony_dynamic_lib_load_symbol(platform->lib, #name); \
     if (platform->pfn. name == NULL) { harmony_error("Could not load Xlib function: " #name) }
 
-HarmonyPlatform *harmony_platform_init(const HarmonyAllocator *allocator) {
-    HarmonyPlatform *platform = harmony_alloc(allocator, sizeof(HarmonyPlatform));
+HarmonyPlatform *harmony_platform_create(void) {
+    HarmonyPlatform *platform = malloc(sizeof(*platform));
 
     platform->lib = harmony_dynamic_lib_open("libX11.so.6");
     if (platform->lib == NULL)
@@ -1746,12 +1592,10 @@ HarmonyPlatform *harmony_platform_init(const HarmonyAllocator *allocator) {
     return platform;
 }
 
-void harmony_platform_shutdown(const HarmonyAllocator *allocator, HarmonyPlatform *platform) {
+void harmony_platform_destroy(HarmonyPlatform *platform) {
     platform->pfn.XCloseDisplay(platform->display);
-
     harmony_dynamic_lib_close(platform->lib);
-
-    harmony_free(allocator, platform, sizeof(*platform));
+    free(platform);
 }
 
 struct HarmonyWindowInternals {
@@ -1859,14 +1703,13 @@ static void harmony_set_fullscreen(
 }
 
 HarmonyWindow harmony_window_create(
-    const HarmonyAllocator *allocator,
     const HarmonyPlatform *platform,
     const HarmonyWindowConfig *config
 ) {
     harmony_assert(platform != NULL);
     harmony_assert(config != NULL);
 
-    HarmonyWindowInternals *x11_window = harmony_alloc(allocator, sizeof(HarmonyWindowInternals));
+    HarmonyWindowInternals *x11_window = malloc(sizeof(*x11_window));
 
     u32 width = config->windowed ? config->width
         : (u32)DisplayWidth(platform->display, DefaultScreen(platform->display));
@@ -1891,15 +1734,12 @@ HarmonyWindow harmony_window_create(
     };
 }
 
-void harmony_window_destroy(const HarmonyAllocator *allocator, const HarmonyPlatform *platform, HarmonyWindow *window) {
-    harmony_assert(allocator != NULL);
+void harmony_window_destroy(const HarmonyPlatform *platform, HarmonyWindow *window) {
     harmony_assert(platform != NULL);
     harmony_assert(window != NULL);
-
     platform->pfn.XDestroyWindow(platform->display, window->platform_internals->window);
     platform->pfn.XFlush(platform->display);
-
-    harmony_free(allocator, window->platform_internals, sizeof(*window->platform_internals));
+    free(window->platform_internals);
 }
 
 void harmony_window_process_events(const HarmonyPlatform *platform, HarmonyWindow **windows, u32 window_count) {
@@ -2336,21 +2176,139 @@ void harmony_window_process_events(const HarmonyPlatform *platform, HarmonyWindo
 
 #endif // __linux__
 
+/**
+ * The vulkan function pointers that can be used
+ */
+typedef struct HarmonyVulkanFuncs {
+    HARMONY_MAKE_VULKAN_FUNC(vkGetInstanceProcAddr)
+    HARMONY_MAKE_VULKAN_FUNC(vkGetDeviceProcAddr)
+
+    HARMONY_MAKE_VULKAN_FUNC(vkEnumerateInstanceExtensionProperties)
+    HARMONY_MAKE_VULKAN_FUNC(vkEnumerateInstanceLayerProperties)
+    HARMONY_MAKE_VULKAN_FUNC(vkCreateInstance)
+    HARMONY_MAKE_VULKAN_FUNC(vkDestroyInstance)
+
+    HARMONY_MAKE_VULKAN_FUNC(vkCreateDebugUtilsMessengerEXT)
+    HARMONY_MAKE_VULKAN_FUNC(vkDestroyDebugUtilsMessengerEXT)
+
+    HARMONY_MAKE_VULKAN_FUNC(vkEnumeratePhysicalDevices)
+    HARMONY_MAKE_VULKAN_FUNC(vkEnumerateDeviceExtensionProperties)
+    HARMONY_MAKE_VULKAN_FUNC(vkGetPhysicalDeviceQueueFamilyProperties)
+    HARMONY_MAKE_VULKAN_FUNC(vkGetPhysicalDeviceFeatures)
+
+    HARMONY_MAKE_VULKAN_FUNC(vkDestroySurfaceKHR)
+    HARMONY_MAKE_VULKAN_FUNC(vkCreateDevice)
+
+    HARMONY_MAKE_VULKAN_FUNC(vkDestroyDevice)
+    HARMONY_MAKE_VULKAN_FUNC(vkDeviceWaitIdle)
+
+    HARMONY_MAKE_VULKAN_FUNC(vkGetPhysicalDeviceSurfaceFormatsKHR)
+    HARMONY_MAKE_VULKAN_FUNC(vkGetPhysicalDeviceSurfacePresentModesKHR)
+    HARMONY_MAKE_VULKAN_FUNC(vkGetPhysicalDeviceSurfaceCapabilitiesKHR)
+    HARMONY_MAKE_VULKAN_FUNC(vkCreateSwapchainKHR)
+    HARMONY_MAKE_VULKAN_FUNC(vkDestroySwapchainKHR)
+    HARMONY_MAKE_VULKAN_FUNC(vkGetSwapchainImagesKHR)
+    HARMONY_MAKE_VULKAN_FUNC(vkAcquireNextImageKHR)
+
+    HARMONY_MAKE_VULKAN_FUNC(vkCreateSemaphore)
+    HARMONY_MAKE_VULKAN_FUNC(vkDestroySemaphore)
+    HARMONY_MAKE_VULKAN_FUNC(vkCreateFence)
+    HARMONY_MAKE_VULKAN_FUNC(vkDestroyFence)
+    HARMONY_MAKE_VULKAN_FUNC(vkResetFences)
+    HARMONY_MAKE_VULKAN_FUNC(vkWaitForFences)
+
+    HARMONY_MAKE_VULKAN_FUNC(vkGetDeviceQueue)
+    HARMONY_MAKE_VULKAN_FUNC(vkQueueWaitIdle)
+    HARMONY_MAKE_VULKAN_FUNC(vkQueueSubmit)
+    HARMONY_MAKE_VULKAN_FUNC(vkQueuePresentKHR)
+
+    HARMONY_MAKE_VULKAN_FUNC(vkCreateCommandPool)
+    HARMONY_MAKE_VULKAN_FUNC(vkDestroyCommandPool)
+    HARMONY_MAKE_VULKAN_FUNC(vkAllocateCommandBuffers)
+    HARMONY_MAKE_VULKAN_FUNC(vkFreeCommandBuffers)
+
+    HARMONY_MAKE_VULKAN_FUNC(vkCreateDescriptorPool)
+    HARMONY_MAKE_VULKAN_FUNC(vkDestroyDescriptorPool)
+    HARMONY_MAKE_VULKAN_FUNC(vkResetDescriptorPool)
+    HARMONY_MAKE_VULKAN_FUNC(vkAllocateDescriptorSets)
+    HARMONY_MAKE_VULKAN_FUNC(vkUpdateDescriptorSets)
+
+    HARMONY_MAKE_VULKAN_FUNC(vkCreateDescriptorSetLayout)
+    HARMONY_MAKE_VULKAN_FUNC(vkDestroyDescriptorSetLayout)
+    HARMONY_MAKE_VULKAN_FUNC(vkCreatePipelineLayout)
+    HARMONY_MAKE_VULKAN_FUNC(vkDestroyPipelineLayout)
+    HARMONY_MAKE_VULKAN_FUNC(vkCreateShaderModule)
+    HARMONY_MAKE_VULKAN_FUNC(vkDestroyShaderModule)
+    HARMONY_MAKE_VULKAN_FUNC(vkCreateGraphicsPipelines)
+    HARMONY_MAKE_VULKAN_FUNC(vkCreateComputePipelines)
+    HARMONY_MAKE_VULKAN_FUNC(vkDestroyPipeline)
+
+    HARMONY_MAKE_VULKAN_FUNC(vkCreateBuffer)
+    HARMONY_MAKE_VULKAN_FUNC(vkDestroyBuffer)
+    HARMONY_MAKE_VULKAN_FUNC(vkCreateImage)
+    HARMONY_MAKE_VULKAN_FUNC(vkDestroyImage)
+    HARMONY_MAKE_VULKAN_FUNC(vkCreateImageView)
+    HARMONY_MAKE_VULKAN_FUNC(vkDestroyImageView)
+    HARMONY_MAKE_VULKAN_FUNC(vkCreateSampler)
+    HARMONY_MAKE_VULKAN_FUNC(vkDestroySampler)
+
+    HARMONY_MAKE_VULKAN_FUNC(vkGetPhysicalDeviceProperties)
+    HARMONY_MAKE_VULKAN_FUNC(vkGetPhysicalDeviceMemoryProperties)
+    HARMONY_MAKE_VULKAN_FUNC(vkGetBufferMemoryRequirements)
+    HARMONY_MAKE_VULKAN_FUNC(vkGetImageMemoryRequirements)
+
+    HARMONY_MAKE_VULKAN_FUNC(vkAllocateMemory)
+    HARMONY_MAKE_VULKAN_FUNC(vkFreeMemory)
+    HARMONY_MAKE_VULKAN_FUNC(vkBindBufferMemory)
+    HARMONY_MAKE_VULKAN_FUNC(vkBindImageMemory)
+    HARMONY_MAKE_VULKAN_FUNC(vkMapMemory)
+    HARMONY_MAKE_VULKAN_FUNC(vkUnmapMemory)
+    HARMONY_MAKE_VULKAN_FUNC(vkFlushMappedMemoryRanges)
+    HARMONY_MAKE_VULKAN_FUNC(vkInvalidateMappedMemoryRanges)
+
+    HARMONY_MAKE_VULKAN_FUNC(vkBeginCommandBuffer)
+    HARMONY_MAKE_VULKAN_FUNC(vkEndCommandBuffer)
+    HARMONY_MAKE_VULKAN_FUNC(vkResetCommandBuffer)
+
+    HARMONY_MAKE_VULKAN_FUNC(vkCmdCopyBuffer)
+    HARMONY_MAKE_VULKAN_FUNC(vkCmdCopyImage)
+    HARMONY_MAKE_VULKAN_FUNC(vkCmdBlitImage)
+    HARMONY_MAKE_VULKAN_FUNC(vkCmdCopyBufferToImage)
+    HARMONY_MAKE_VULKAN_FUNC(vkCmdCopyImageToBuffer)
+    HARMONY_MAKE_VULKAN_FUNC(vkCmdPipelineBarrier2)
+
+    HARMONY_MAKE_VULKAN_FUNC(vkCmdBeginRendering)
+    HARMONY_MAKE_VULKAN_FUNC(vkCmdEndRendering)
+    HARMONY_MAKE_VULKAN_FUNC(vkCmdSetViewport)
+    HARMONY_MAKE_VULKAN_FUNC(vkCmdSetScissor)
+    HARMONY_MAKE_VULKAN_FUNC(vkCmdBindPipeline)
+    HARMONY_MAKE_VULKAN_FUNC(vkCmdBindDescriptorSets)
+    HARMONY_MAKE_VULKAN_FUNC(vkCmdPushConstants)
+    HARMONY_MAKE_VULKAN_FUNC(vkCmdBindVertexBuffers)
+    HARMONY_MAKE_VULKAN_FUNC(vkCmdBindIndexBuffer)
+    HARMONY_MAKE_VULKAN_FUNC(vkCmdDraw)
+    HARMONY_MAKE_VULKAN_FUNC(vkCmdDrawIndexed)
+    HARMONY_MAKE_VULKAN_FUNC(vkCmdDispatch)
+} HarmonyVulkanFuncs;
+
+#undef HARMONY_MAKE_VULKAN_FUNC
+
+static void *harmony_libvulkan;
+static HarmonyVulkanFuncs harmony_vk_pfn;
+
 #define HARMONY_LOAD_VULKAN_FUNC(name) \
-    vk->pfn. name = (PFN_##name)vk->pfn.vkGetInstanceProcAddr(NULL, #name); \
-    if (vk->pfn. name == NULL) { \
+    harmony_vk_pfn. name = (PFN_##name)harmony_vk_pfn.vkGetInstanceProcAddr(NULL, #name); \
+    if (harmony_vk_pfn. name == NULL) { \
         harmony_error("Could not load " #name); \
     }
 
-static void harmony_load_vulkan(HarmonyVulkan *vk) {
-    harmony_assert(vk != NULL);
-
-    vk->lib = harmony_dynamic_lib_open("libvulkan.so.1");
-    if (vk->lib == NULL)
+static void harmony_load_vulkan(void) {
+    harmony_libvulkan = harmony_dynamic_lib_open("libvulkan.so.1");
+    if (harmony_libvulkan == NULL)
         harmony_error("Could not load vulkan");
 
-    *(void **)&vk->pfn.vkGetInstanceProcAddr
-        = harmony_dynamic_lib_load_symbol(vk->lib, "vkGetInstanceProcAddr");
+    *(void **)&harmony_vk_pfn.vkGetInstanceProcAddr
+        = harmony_dynamic_lib_load_symbol(harmony_libvulkan, "vkGetInstanceProcAddr");
 
     HARMONY_LOAD_VULKAN_FUNC(vkEnumerateInstanceExtensionProperties);
     HARMONY_LOAD_VULKAN_FUNC(vkEnumerateInstanceLayerProperties);
@@ -2359,164 +2317,133 @@ static void harmony_load_vulkan(HarmonyVulkan *vk) {
 
 #undef HARMONY_LOAD_VULKAN_FUNC
 
-#define HARMONY_LOAD_VULKAN_INSTANCE_FUNC(name) \
-    vk->pfn. name = (PFN_##name)vk->pfn.vkGetInstanceProcAddr(vk->instance, #name); \
-    if (vk->pfn. name == NULL) { harmony_error("Could not load " #name); }
+#define HARMONY_LOAD_VULKAN_INSTANCE_FUNC(instance, name) \
+    harmony_vk_pfn. name = (PFN_##name)harmony_vk_pfn.vkGetInstanceProcAddr(instance, #name); \
+    if (harmony_vk_pfn. name == NULL) { harmony_error("Could not load " #name); }
 
-static void harmony_load_vulkan_instance(HarmonyVulkan *vk) {
-    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkGetDeviceProcAddr);
-    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkDestroyInstance);
-    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkCreateDebugUtilsMessengerEXT);
-    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkDestroyDebugUtilsMessengerEXT);
-    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkEnumeratePhysicalDevices);
-    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkEnumerateDeviceExtensionProperties);
-    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkGetPhysicalDeviceQueueFamilyProperties);
-    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkGetPhysicalDeviceFeatures);
-    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkGetPhysicalDeviceProperties);
-    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkGetPhysicalDeviceMemoryProperties);
-    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkGetPhysicalDeviceSurfaceFormatsKHR);
-    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkGetPhysicalDeviceSurfacePresentModesKHR);
-    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
+static void harmony_load_vulkan_instance(VkInstance instance) {
+    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(instance, vkGetDeviceProcAddr);
+    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(instance, vkDestroyInstance);
+    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(instance, vkCreateDebugUtilsMessengerEXT);
+    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(instance, vkDestroyDebugUtilsMessengerEXT);
+    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(instance, vkEnumeratePhysicalDevices);
+    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(instance, vkEnumerateDeviceExtensionProperties);
+    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(instance, vkGetPhysicalDeviceQueueFamilyProperties);
+    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(instance, vkGetPhysicalDeviceFeatures);
+    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(instance, vkGetPhysicalDeviceProperties);
+    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(instance, vkGetPhysicalDeviceMemoryProperties);
+    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(instance, vkGetPhysicalDeviceSurfaceFormatsKHR);
+    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(instance, vkGetPhysicalDeviceSurfacePresentModesKHR);
+    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(instance, vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
 
-    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkDestroySurfaceKHR)
-    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(vkCreateDevice)
+    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(instance, vkDestroySurfaceKHR)
+    HARMONY_LOAD_VULKAN_INSTANCE_FUNC(instance, vkCreateDevice)
 }
 
 #undef HARMONY_LOAD_VULKAN_INSTANCE_FUNC
 
-#define HARMONY_LOAD_VULKAN_DEVICE_FUNC(name) \
-    vk->pfn. name = (PFN_##name)vk->pfn.vkGetDeviceProcAddr(vk->device, #name); \
-    if (vk->pfn. name == NULL) { harmony_error("Could not load " #name); }
+#define HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, name) \
+    harmony_vk_pfn. name = (PFN_##name)harmony_vk_pfn.vkGetDeviceProcAddr(device, #name); \
+    if (harmony_vk_pfn. name == NULL) { harmony_error("Could not load " #name); }
 
-static void harmony_load_vulkan_device(HarmonyVulkan *vk) {
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkDestroyDevice)
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkDeviceWaitIdle)
+static void harmony_load_vulkan_device(VkDevice device) {
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkDestroyDevice)
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkDeviceWaitIdle)
 
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCreateSwapchainKHR)
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkDestroySwapchainKHR)
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkGetSwapchainImagesKHR)
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkAcquireNextImageKHR)
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCreateSwapchainKHR)
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkDestroySwapchainKHR)
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkGetSwapchainImagesKHR)
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkAcquireNextImageKHR)
 
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCreateSemaphore);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkDestroySemaphore);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCreateFence);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkDestroyFence);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkResetFences);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkWaitForFences);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCreateSemaphore);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkDestroySemaphore);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCreateFence);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkDestroyFence);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkResetFences);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkWaitForFences);
 
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkGetDeviceQueue);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkQueueWaitIdle);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkQueueSubmit2);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkQueuePresentKHR);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkGetDeviceQueue);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkQueueWaitIdle);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkQueueSubmit);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkQueuePresentKHR);
 
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCreateCommandPool);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkDestroyCommandPool);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkAllocateCommandBuffers);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkFreeCommandBuffers);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCreateCommandPool);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkDestroyCommandPool);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkAllocateCommandBuffers);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkFreeCommandBuffers);
 
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCreateDescriptorPool);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkDestroyDescriptorPool);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkResetDescriptorPool);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkAllocateDescriptorSets);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkUpdateDescriptorSets);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCreateDescriptorPool);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkDestroyDescriptorPool);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkResetDescriptorPool);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkAllocateDescriptorSets);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkUpdateDescriptorSets);
 
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCreateDescriptorSetLayout);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkDestroyDescriptorSetLayout);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCreatePipelineLayout);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkDestroyPipelineLayout);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCreateShaderModule);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkDestroyShaderModule);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCreateGraphicsPipelines);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCreateComputePipelines);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkDestroyPipeline);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCreateDescriptorSetLayout);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkDestroyDescriptorSetLayout);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCreatePipelineLayout);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkDestroyPipelineLayout);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCreateShaderModule);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkDestroyShaderModule);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCreateGraphicsPipelines);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCreateComputePipelines);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkDestroyPipeline);
 
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCreateBuffer);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkDestroyBuffer);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCreateImage);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkDestroyImage);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCreateImageView);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkDestroyImageView);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCreateSampler);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkDestroySampler);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCreateBuffer);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkDestroyBuffer);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCreateImage);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkDestroyImage);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCreateImageView);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkDestroyImageView);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCreateSampler);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkDestroySampler);
 
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkGetBufferMemoryRequirements);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkGetImageMemoryRequirements);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkGetBufferMemoryRequirements);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkGetImageMemoryRequirements);
 
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkAllocateMemory);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkFreeMemory);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkBindBufferMemory);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkBindImageMemory);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkMapMemory);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkUnmapMemory);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkFlushMappedMemoryRanges);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkInvalidateMappedMemoryRanges);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkAllocateMemory);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkFreeMemory);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkBindBufferMemory);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkBindImageMemory);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkMapMemory);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkUnmapMemory);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkFlushMappedMemoryRanges);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkInvalidateMappedMemoryRanges);
 
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkBeginCommandBuffer);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkEndCommandBuffer);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkResetCommandBuffer);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkBeginCommandBuffer);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkEndCommandBuffer);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkResetCommandBuffer);
 
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCmdCopyBuffer);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCmdCopyImage);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCmdBlitImage);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCmdCopyBufferToImage);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCmdCopyImageToBuffer);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCmdPipelineBarrier2);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCmdCopyBuffer);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCmdCopyImage);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCmdBlitImage);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCmdCopyBufferToImage);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCmdCopyImageToBuffer);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCmdPipelineBarrier2);
 
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCmdBeginRendering);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCmdEndRendering);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCmdSetViewport);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCmdSetScissor);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCmdBindPipeline);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCmdBindDescriptorSets);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCmdPushConstants);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCmdBindVertexBuffers);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCmdBindIndexBuffer);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCmdDraw);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCmdDrawIndexed);
-    HARMONY_LOAD_VULKAN_DEVICE_FUNC(vkCmdDispatch);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCmdBeginRendering);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCmdEndRendering);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCmdSetViewport);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCmdSetScissor);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCmdBindPipeline);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCmdBindDescriptorSets);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCmdPushConstants);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCmdBindVertexBuffers);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCmdBindIndexBuffer);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCmdDraw);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCmdDrawIndexed);
+    HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkCmdDispatch);
 }
 
 #undef HARMONY_LOAD_VULKAN_DEVICE_FUNC
 
-static const char* const DeviceExtensions[] = {
+static const char* const harmony_vk_device_extensions[] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 };
 
-HarmonyVulkan harmony_vulkan_create(void) {
-    HarmonyVulkan vk;
-
-    harmony_load_vulkan(&vk);
-    vk.instance = harmony_vk_create_instance(&vk);
-    harmony_load_vulkan_instance(&vk);
-    harmony_debug_mode(vk.debug_messenger = harmony_vk_create_debug_messenger(&vk));
-    vk.gpu = harmony_vk_find_physical_device(&vk);
-    if (!harmony_vk_find_queue_family(&vk, &vk.queue_family, VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT))
-        harmony_error("Could not find Vulkan queue family");
-    vk.device = harmony_vk_create_device(&vk);
-    harmony_load_vulkan_device(&vk);
-    
-    return vk;
-}
-
-void harmony_vulkan_destroy(HarmonyVulkan *vk) {
-    harmony_assert(vk != NULL);
-    harmony_assert(vk->instance != VK_NULL_HANDLE);
-    harmony_assert(vk->debug_messenger != VK_NULL_HANDLE);
-    harmony_assert(vk->gpu != VK_NULL_HANDLE);
-    harmony_assert(vk->device != VK_NULL_HANDLE);
-
-    vk->pfn.vkDestroyDevice(vk->device, NULL);
-    harmony_debug_mode(vk->pfn.vkDestroyDebugUtilsMessengerEXT(vk->instance, vk->debug_messenger, NULL));
-    vk->pfn.vkDestroyInstance(vk->instance, NULL);
-    harmony_dynamic_lib_close(vk->lib);
-}
-
 static void harmony_check_instance_extensions(
-    const HarmonyVulkan *vk,
     const char **exts,
     u32 ext_count
 ) {
-    harmony_assert(vk != NULL);
     if (ext_count > 0) {
         harmony_assert(exts != NULL);
     } else {
@@ -2524,7 +2451,7 @@ static void harmony_check_instance_extensions(
     }
 
     u32 ext_prop_count = 0;
-    VkResult ext_count_res = vk->pfn.vkEnumerateInstanceExtensionProperties(
+    VkResult ext_count_res = harmony_vk_pfn.vkEnumerateInstanceExtensionProperties(
         NULL, &ext_prop_count, NULL);
     switch (ext_count_res) {
         case VK_SUCCESS: break;
@@ -2539,9 +2466,9 @@ static void harmony_check_instance_extensions(
     }
 
     VkExtensionProperties* ext_props = malloc(
-        ext_prop_count * sizeof(VkExtensionProperties));
+        ext_prop_count * sizeof(*ext_props));
 
-    VkResult ext_res = vk->pfn.vkEnumerateInstanceExtensionProperties(
+    VkResult ext_res = harmony_vk_pfn.vkEnumerateInstanceExtensionProperties(
         NULL, &ext_prop_count, ext_props);
     switch (ext_res) {
         case VK_SUCCESS: break;
@@ -2568,8 +2495,8 @@ next_ext:
     free(ext_props);
 }
 
+#ifndef NDEBUG
 static void harmony_check_instance_layers(
-    const HarmonyVulkan *vk,
     const char **layers,
     u32 layer_count
 ) {
@@ -2580,7 +2507,7 @@ static void harmony_check_instance_layers(
     }
 
     u32 prop_count = 0;
-    VkResult count_result = vk->pfn.vkEnumerateInstanceLayerProperties(&prop_count, NULL);
+    VkResult count_result = harmony_vk_pfn.vkEnumerateInstanceLayerProperties(&prop_count, NULL);
     switch (count_result) {
         case VK_SUCCESS: break;
         case VK_INCOMPLETE: {
@@ -2594,8 +2521,8 @@ static void harmony_check_instance_layers(
         default: harmony_error("Unexpected Vulkan error");
     }
 
-    VkLayerProperties* layer_props = malloc(prop_count * sizeof(VkLayerProperties));
-    VkResult props_result = vk->pfn.vkEnumerateInstanceLayerProperties(&prop_count, layer_props);
+    VkLayerProperties* layer_props = malloc(prop_count * sizeof(*layer_props));
+    VkResult props_result = harmony_vk_pfn.vkEnumerateInstanceLayerProperties(&prop_count, layer_props);
     switch (props_result) {
         case VK_SUCCESS: break;
         case VK_INCOMPLETE: {
@@ -2619,6 +2546,7 @@ next_layer:
         continue;
     }
 }
+#endif
 
 static VkBool32 harmony_debug_callback(
     const VkDebugUtilsMessageSeverityFlagBitsEXT severity,
@@ -2629,13 +2557,13 @@ static VkBool32 harmony_debug_callback(
     (void)type;
     (void)user_data;
 
-    if (severity & (VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT
-                 |  VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)) {
-        HARMONY_LOG_FUNCTION("Vulkan Info: %s\n", callback_data->pMessage);
+    if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+        HARMONY_LOG_FUNCTION("Vulkan Error: %s\n", callback_data->pMessage);
     } else if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
         HARMONY_LOG_FUNCTION("Vulkan Warning: %s\n", callback_data->pMessage);
-    } else if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
-        HARMONY_LOG_FUNCTION("Vulkan Error: %s\n", callback_data->pMessage);
+    } else if (severity & (VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT
+                        |  VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)) {
+        HARMONY_LOG_FUNCTION("Vulkan Info: %s\n", callback_data->pMessage);
     } else {
         HARMONY_LOG_FUNCTION("Vulkan Unknown: %s\n", callback_data->pMessage);
     }
@@ -2653,14 +2581,14 @@ static const VkDebugUtilsMessengerCreateInfoEXT harmony_debug_utils_messenger_cr
     .pfnUserCallback = harmony_debug_callback,
 };
 
-VkInstance harmony_vk_create_instance(const HarmonyVulkan *vk) {
-    harmony_assert(vk != NULL);
+VkInstance harmony_vk_create_instance(void) {
+    harmony_load_vulkan();
 
     VkApplicationInfo app_info = {
         .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-        .pApplicationName = "Hurdy Gurdy",
+        .pApplicationName = "Harmony",
         .applicationVersion = 0,
-        .pEngineName = "Hurdy Gurdy",
+        .pEngineName = "Harmony",
         .engineVersion = 0,
         .apiVersion = VK_API_VERSION_1_3,
     };
@@ -2669,7 +2597,7 @@ VkInstance harmony_vk_create_instance(const HarmonyVulkan *vk) {
     const char* layers[] = {
         "VK_LAYER_KHRONOS_validation",
     };
-    harmony_check_instance_layers(vk, layers, harmony_countof(layers));
+    harmony_check_instance_layers(layers, harmony_countof(layers));
 #endif // NDEBUG
 
     const char* exts[] = {
@@ -2683,7 +2611,7 @@ VkInstance harmony_vk_create_instance(const HarmonyVulkan *vk) {
 #error "unsupported platform, supported platforms: linux"
 #endif // __linux__
     };
-    harmony_check_instance_extensions(vk, exts, harmony_countof(exts));
+    harmony_check_instance_extensions(exts, harmony_countof(exts));
 
     VkInstanceCreateInfo instance_info = {
         .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
@@ -2700,7 +2628,7 @@ VkInstance harmony_vk_create_instance(const HarmonyVulkan *vk) {
     };
 
     VkInstance instance = VK_NULL_HANDLE;
-    VkResult result = vk->pfn.vkCreateInstance(&instance_info, NULL, &instance);
+    VkResult result = harmony_vk_pfn.vkCreateInstance(&instance_info, NULL, &instance);
     switch (result) {
         case VK_SUCCESS: break;
         case VK_ERROR_LAYER_NOT_PRESENT: harmony_error("Required Vulkan layer not present");
@@ -2712,26 +2640,21 @@ VkInstance harmony_vk_create_instance(const HarmonyVulkan *vk) {
         default: harmony_error("Unexpected Vulkan error");
     }
 
+    harmony_load_vulkan_instance(instance);
     return instance;
 }
 
-void harmony_vk_destroy_instance(const HarmonyVulkan *vk, VkInstance instance) {
-    harmony_assert(vk != NULL);
+void harmony_vk_destroy_instance(VkInstance instance) {
     harmony_assert(instance != VK_NULL_HANDLE);
-    vk->pfn.vkDestroyInstance(instance, NULL);
+    harmony_vk_pfn.vkDestroyInstance(instance, NULL);
 }
 
-VkDebugUtilsMessengerEXT harmony_vk_create_debug_messenger(const HarmonyVulkan *vk) {
-    harmony_assert(vk != NULL);
-    harmony_assert(vk->instance != VK_NULL_HANDLE);
+VkDebugUtilsMessengerEXT harmony_vk_create_debug_messenger(VkInstance instance) {
+    harmony_assert(instance != VK_NULL_HANDLE);
 
     VkDebugUtilsMessengerEXT messenger = NULL;
-    VkResult result = vk->pfn.vkCreateDebugUtilsMessengerEXT(
-        vk->instance,
-        &harmony_debug_utils_messenger_create_info,
-        NULL,
-        &messenger
-    );
+    VkResult result = harmony_vk_pfn.vkCreateDebugUtilsMessengerEXT(
+        instance, &harmony_debug_utils_messenger_create_info, NULL, &messenger);
     switch (result) {
         case VK_SUCCESS: break;
         case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
@@ -2741,18 +2664,17 @@ VkDebugUtilsMessengerEXT harmony_vk_create_debug_messenger(const HarmonyVulkan *
     return messenger;
 }
 
-void harmony_vk_destroy_debug_messenger(const HarmonyVulkan *vk, VkDebugUtilsMessengerEXT messenger) {
-    harmony_assert(vk != NULL);
+void harmony_vk_destroy_debug_messenger(VkInstance instance, VkDebugUtilsMessengerEXT messenger) {
+    harmony_assert(instance != VK_NULL_HANDLE);
     harmony_assert(messenger != NULL);
-    vk->pfn.vkDestroyDebugUtilsMessengerEXT(vk->instance, messenger, NULL);
+    harmony_vk_pfn.vkDestroyDebugUtilsMessengerEXT(instance, messenger, NULL);
 }
 
-VkPhysicalDevice harmony_vk_find_physical_device(const HarmonyVulkan *vk) {
-    harmony_assert(vk != NULL);
-    harmony_assert(vk->instance != NULL);
+VkPhysicalDevice harmony_vk_find_physical_device(VkInstance instance) {
+    harmony_assert(instance != VK_NULL_HANDLE);
 
     u32 gpu_count;
-    VkResult gpu_count_res = vk->pfn.vkEnumeratePhysicalDevices(vk->instance, &gpu_count, NULL);
+    VkResult gpu_count_res = harmony_vk_pfn.vkEnumeratePhysicalDevices(instance, &gpu_count, NULL);
     switch (gpu_count_res) {
         case VK_SUCCESS: break;
         case VK_INCOMPLETE: {
@@ -2771,7 +2693,7 @@ VkPhysicalDevice harmony_vk_find_physical_device(const HarmonyVulkan *vk) {
     VkPhysicalDevice gpus[HARMONY_MAX_GPUS];
 #undef HARMONY_MAX_GPUS
 
-    VkResult gpu_result = vk->pfn.vkEnumeratePhysicalDevices(vk->instance, &gpu_count, gpus);
+    VkResult gpu_result = harmony_vk_pfn.vkEnumeratePhysicalDevices(instance, &gpu_count, gpus);
     switch (gpu_result) {
         case VK_SUCCESS: break;
         case VK_INCOMPLETE: {
@@ -2791,14 +2713,8 @@ VkPhysicalDevice harmony_vk_find_physical_device(const HarmonyVulkan *vk) {
     for (u32 i = 0; i < gpu_count; ++i) {
         VkPhysicalDevice gpu = gpus[i];
 
-        VkPhysicalDeviceFeatures features = {0};
-        vk->pfn.vkGetPhysicalDeviceFeatures(gpu, &features);
-        if (features.sampleRateShading != VK_TRUE ||
-            features.samplerAnisotropy != VK_TRUE)
-            continue;
-
         u32 new_prop_count = 0;
-        VkResult ext_count_res = vk->pfn.vkEnumerateDeviceExtensionProperties(gpu, NULL, &new_prop_count, NULL);
+        VkResult ext_count_res = harmony_vk_pfn.vkEnumerateDeviceExtensionProperties(gpu, NULL, &new_prop_count, NULL);
         switch (ext_count_res) {
             case VK_SUCCESS: break;
             case VK_INCOMPLETE: continue;
@@ -2813,7 +2729,7 @@ VkPhysicalDevice harmony_vk_find_physical_device(const HarmonyVulkan *vk) {
             ext_props = realloc(ext_props, ext_prop_count * sizeof(VkExtensionProperties));
         }
 
-        VkResult ext_res = vk->pfn.vkEnumerateDeviceExtensionProperties(gpu, NULL, &new_prop_count, ext_props);
+        VkResult ext_res = harmony_vk_pfn.vkEnumerateDeviceExtensionProperties(gpu, NULL, &new_prop_count, ext_props);
         switch (ext_res) {
             case VK_SUCCESS: break;
             case VK_INCOMPLETE: {
@@ -2829,25 +2745,18 @@ VkPhysicalDevice harmony_vk_find_physical_device(const HarmonyVulkan *vk) {
             default: harmony_error("Unexpected Vulkan error");
         }
 
-        bool found_all_extensions = true;
-        for (usize j = 0; j < harmony_countof(DeviceExtensions); j++) {
-            bool found_extension = false;
+        for (usize j = 0; j < harmony_countof(harmony_vk_device_extensions); j++) {
             for (usize k = 0; k < new_prop_count; k++) {
-                if (strcmp(DeviceExtensions[j], ext_props[k].extensionName) == 0) {
-                    found_extension = true;
-                    break;
-                }
+                if (strcmp(harmony_vk_device_extensions[j], ext_props[k].extensionName) == 0)
+                    goto next_ext;
             }
-            if (!found_extension) {
-                found_all_extensions = false;
-                break;
-            }
-        }
-        if (!found_all_extensions)
+            goto next_gpu;
+next_ext:
             continue;
+        }
 
         u32 queue_family_count = 0;
-        vk->pfn.vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queue_family_count, NULL);
+        harmony_vk_pfn.vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queue_family_count, NULL);
 
 #define HARMONY_MAX_QUEUE_FAMILIES 32
         if (queue_family_count > HARMONY_MAX_QUEUE_FAMILIES)
@@ -2855,20 +2764,21 @@ VkPhysicalDevice harmony_vk_find_physical_device(const HarmonyVulkan *vk) {
         VkQueueFamilyProperties queue_families[HARMONY_MAX_QUEUE_FAMILIES];
 #undef HARMONY_MAX_QUEUE_FAMILIES
 
-        vk->pfn.vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queue_family_count, queue_families);
+        harmony_vk_pfn.vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queue_family_count, queue_families);
 
-        bool found_queue_family = false;
         for (u32 j = 0; j < queue_family_count; ++j) {
             if (queue_families[j].queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)) {
-                found_queue_family = true;
-                break;
+                goto found_queue_family;
             }
         }
-        if (!found_queue_family)
-            continue;
+        goto next_gpu;
+found_queue_family:
 
         suitable_gpu = gpu;
         break;
+
+next_gpu:
+        continue;
     }
     if (suitable_gpu == VK_NULL_HANDLE)
         harmony_error("Could not find suitable gpu");
@@ -2877,8 +2787,8 @@ VkPhysicalDevice harmony_vk_find_physical_device(const HarmonyVulkan *vk) {
     return suitable_gpu;
 }
 
-VkDevice harmony_vk_create_device(const HarmonyVulkan *vk) {
-    harmony_assert(vk->gpu != NULL);
+VkDevice harmony_vk_create_single_queue_device(VkPhysicalDevice gpu, u32 queue_family) {
+    harmony_assert(gpu != NULL);
 
     VkPhysicalDeviceDynamicRenderingFeatures dynamic_rendering_feature = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
@@ -2889,15 +2799,12 @@ VkDevice harmony_vk_create_device(const HarmonyVulkan *vk) {
         .pNext = &dynamic_rendering_feature,
         .synchronization2 = VK_TRUE,
     };
-    VkPhysicalDeviceFeatures features = {
-        .sampleRateShading = VK_TRUE,
-        .samplerAnisotropy = VK_TRUE,
-    };
+    VkPhysicalDeviceFeatures features = {0};
 
     float queue_priority = 1.0f;
     VkDeviceQueueCreateInfo queue_info = {
         .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-        .queueFamilyIndex = vk->queue_family,
+        .queueFamilyIndex = queue_family,
         .queueCount = 1,
         .pQueuePriorities = &queue_priority
     };
@@ -2907,13 +2814,13 @@ VkDevice harmony_vk_create_device(const HarmonyVulkan *vk) {
         .pNext = &synchronization2_feature,
         .queueCreateInfoCount = 1,
         .pQueueCreateInfos = &queue_info,
-        .enabledExtensionCount = harmony_countof(DeviceExtensions),
-        .ppEnabledExtensionNames = DeviceExtensions,
+        .enabledExtensionCount = harmony_countof(harmony_vk_device_extensions),
+        .ppEnabledExtensionNames = harmony_vk_device_extensions,
         .pEnabledFeatures = &features,
     };
 
     VkDevice device = NULL;
-    VkResult result = vk->pfn.vkCreateDevice(vk->gpu, &device_info, NULL, &device);
+    VkResult result = harmony_vk_pfn.vkCreateDevice(gpu, &device_info, NULL, &device);
     switch (result) {
         case VK_SUCCESS: break;
         case VK_ERROR_EXTENSION_NOT_PRESENT: harmony_error("Required Vulkan extension not present");
@@ -2925,20 +2832,21 @@ VkDevice harmony_vk_create_device(const HarmonyVulkan *vk) {
         case VK_ERROR_DEVICE_LOST: harmony_error("Vulkan device lost");
         default: harmony_error("Unexpected Vulkan error");
     }
+
+    harmony_load_vulkan_device(device);
     return device;
 }
 
-void harmony_vk_destroy_device(const HarmonyVulkan *vk, VkDevice device) {
-    harmony_assert(vk != NULL);
+void harmony_vk_destroy_device(VkDevice device) {
     harmony_assert(device != VK_NULL_HANDLE);
-    vk->pfn.vkDestroyDevice(device, NULL);
+    harmony_vk_pfn.vkDestroyDevice(device, NULL);
 }
 
-void harmony_vk_device_wait(const HarmonyVulkan *vk) {
-    harmony_assert(vk != NULL);
-    harmony_assert(vk->device != NULL);
+void harmony_vk_wait_for_device(VkDevice device) {
+    harmony_assert(device != VK_NULL_HANDLE);
+    harmony_assert(device != NULL);
 
-    VkResult result = vk->pfn.vkDeviceWaitIdle(vk->device);
+    VkResult result = harmony_vk_pfn.vkDeviceWaitIdle(device);
     switch (result) {
         case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
         case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
@@ -2950,11 +2858,11 @@ void harmony_vk_device_wait(const HarmonyVulkan *vk) {
 }
 
 VkSurfaceKHR harmony_vk_create_surface(
-    const HarmonyVulkan *vk,
+    VkInstance instance,
     const HarmonyPlatform *platform,
     const HarmonyWindow *window
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(instance != VK_NULL_HANDLE);
     harmony_assert(platform != NULL);
     harmony_assert(window != NULL);
 
@@ -2963,13 +2871,13 @@ VkSurfaceKHR harmony_vk_create_surface(
 #ifdef __linux__
 
     PFN_vkCreateXlibSurfaceKHR pfn_vkCreateXlibSurfaceKHR
-        = (PFN_vkCreateXlibSurfaceKHR)vk->pfn.vkGetInstanceProcAddr(
-            vk->instance, "vkCreateXlibSurfaceKHR");
+        = (PFN_vkCreateXlibSurfaceKHR)harmony_vk_pfn.vkGetInstanceProcAddr(
+            instance, "vkCreateXlibSurfaceKHR");
     if (pfn_vkCreateXlibSurfaceKHR == NULL)
         harmony_error("Could not load vkCreateXlibSurfaceKHR");
 
     VkResult surface_result = pfn_vkCreateXlibSurfaceKHR(
-        vk->instance,
+        instance,
         &(VkXlibSurfaceCreateInfoKHR){
             .sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR,
             .dpy = platform->display,
@@ -2997,26 +2905,26 @@ VkSurfaceKHR harmony_vk_create_surface(
     return surface;
 }
 
-void harmony_vk_destroy_surface(const HarmonyVulkan *vk, VkSurfaceKHR surface) {
-    harmony_assert(vk != NULL);
+void harmony_vk_destroy_surface(VkInstance instance, VkSurfaceKHR surface) {
+    harmony_assert(instance != VK_NULL_HANDLE);
     harmony_assert(surface != NULL);
-    vk->pfn.vkDestroySurfaceKHR(vk->instance, surface, NULL);
+    harmony_vk_pfn.vkDestroySurfaceKHR(instance, surface, NULL);
 }
 
 static VkPresentModeKHR harmony_vk_find_swapchain_present_mode(
-    const HarmonyVulkan *vk,
+    VkPhysicalDevice gpu,
     VkSurfaceKHR surface,
     VkPresentModeKHR desired_mode
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(gpu != VK_NULL_HANDLE);
     harmony_assert(surface != VK_NULL_HANDLE);
 
     if (desired_mode == VK_PRESENT_MODE_FIFO_KHR)
         return desired_mode;
 
     u32 mode_count = 0;
-    VkResult count_res = vk->pfn.vkGetPhysicalDeviceSurfacePresentModesKHR(
-        vk->gpu, surface, &mode_count, NULL);
+    VkResult count_res = harmony_vk_pfn.vkGetPhysicalDeviceSurfacePresentModesKHR(
+        gpu, surface, &mode_count, NULL);
     switch (count_res) {
         case VK_SUCCESS: break;
         case VK_INCOMPLETE: {
@@ -3035,8 +2943,8 @@ static VkPresentModeKHR harmony_vk_find_swapchain_present_mode(
     VkPresentModeKHR present_modes[HARMONY_MAX_PRESENT_MODES];
 #undef HARMONY_MAX_PRESENT_MODES
 
-    VkResult present_res = vk->pfn.vkGetPhysicalDeviceSurfacePresentModesKHR(
-        vk->gpu, surface, &mode_count, present_modes);
+    VkResult present_res = harmony_vk_pfn.vkGetPhysicalDeviceSurfacePresentModesKHR(
+        gpu, surface, &mode_count, present_modes);
     switch (present_res) {
         case VK_SUCCESS: break;
         case VK_INCOMPLETE: {
@@ -3056,17 +2964,13 @@ static VkPresentModeKHR harmony_vk_find_swapchain_present_mode(
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-static VkFormat harmony_vk_find_swapchain_format(const HarmonyVulkan *vk, VkSurfaceKHR surface) {
-    harmony_assert(vk != NULL);
+static VkFormat harmony_vk_find_swapchain_format(VkPhysicalDevice gpu, VkSurfaceKHR surface) {
+    harmony_assert(gpu != VK_NULL_HANDLE);
     harmony_assert(surface != VK_NULL_HANDLE);
 
     u32 format_count = 0;
-    VkResult formats_count_res = vk->pfn.vkGetPhysicalDeviceSurfaceFormatsKHR(
-        vk->gpu,
-        surface,
-        &format_count,
-        NULL
-    );
+    VkResult formats_count_res = harmony_vk_pfn.vkGetPhysicalDeviceSurfaceFormatsKHR(
+        gpu, surface, &format_count, NULL);
     switch (formats_count_res) {
         case VK_SUCCESS: break;
         case VK_INCOMPLETE: {
@@ -3089,8 +2993,8 @@ static VkFormat harmony_vk_find_swapchain_format(const HarmonyVulkan *vk, VkSurf
     VkSurfaceFormatKHR formats[HARMONY_MAX_FORMATS];
 #undef HARMONY_MAX_FORMATS
 
-    VkResult format_result = vk->pfn.vkGetPhysicalDeviceSurfaceFormatsKHR(
-        vk->gpu,
+    VkResult format_result = harmony_vk_pfn.vkGetPhysicalDeviceSurfaceFormatsKHR(
+        gpu,
         surface,
         &format_count,
         formats
@@ -3119,7 +3023,8 @@ static VkFormat harmony_vk_find_swapchain_format(const HarmonyVulkan *vk, VkSurf
 }
 
 VkSwapchainKHR harmony_vk_create_swapchain(
-    const HarmonyVulkan *vk,
+    VkDevice device,
+    VkPhysicalDevice gpu,
     u32 *width,
     u32 *height,
     VkFormat *format,
@@ -3128,23 +3033,20 @@ VkSwapchainKHR harmony_vk_create_swapchain(
     VkImageUsageFlags image_usage,
     VkPresentModeKHR desired_mode
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(width != NULL);
     harmony_assert(height != NULL);
     harmony_assert(format != NULL);
     harmony_assert(surface != VK_NULL_HANDLE);
     harmony_assert(image_usage != 0);
 
-    VkPresentModeKHR present_mode = harmony_vk_find_swapchain_present_mode(vk, surface, desired_mode);
+    VkPresentModeKHR present_mode = harmony_vk_find_swapchain_present_mode(gpu, surface, desired_mode);
 
-    *format = harmony_vk_find_swapchain_format(vk, surface);
+    *format = harmony_vk_find_swapchain_format(gpu, surface);
 
     VkSurfaceCapabilitiesKHR surface_capabilities = {0};
-    VkResult surface_result = vk->pfn.vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-        vk->gpu,
-        surface,
-        &surface_capabilities
-    );
+    VkResult surface_result = harmony_vk_pfn.vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+        gpu, surface, &surface_capabilities);
     switch (surface_result) {
         case VK_SUCCESS: break;
         case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
@@ -3183,8 +3085,8 @@ VkSwapchainKHR harmony_vk_create_swapchain(
     };
 
     VkSwapchainKHR new_swapchain = NULL;
-    VkResult swapchain_result = vk->pfn.vkCreateSwapchainKHR(
-        vk->device,
+    VkResult swapchain_result = harmony_vk_pfn.vkCreateSwapchainKHR(
+        device,
         &new_swapchain_info,
         NULL,
         &new_swapchain
@@ -3204,19 +3106,19 @@ VkSwapchainKHR harmony_vk_create_swapchain(
     return new_swapchain;
 }
 
-void harmony_vk_destroy_swapchain(const HarmonyVulkan *vk, VkSwapchainKHR swapchain) {
-    harmony_assert(vk != NULL);
+void harmony_vk_destroy_swapchain(VkDevice device, VkSwapchainKHR swapchain) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(swapchain != NULL);
-    vk->pfn.vkDestroySwapchainKHR(vk->device, swapchain, NULL);
+    harmony_vk_pfn.vkDestroySwapchainKHR(device, swapchain, NULL);
 }
 
-u32 harmony_vk_get_swapchain_image_count(const HarmonyVulkan *vk, VkSwapchainKHR swapchain) {
-    harmony_assert(vk != NULL);
+u32 harmony_vk_get_swapchain_image_count(VkDevice device, VkSwapchainKHR swapchain) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(swapchain != NULL);
 
     u32 image_count;
-    VkResult result = vk->pfn.vkGetSwapchainImagesKHR(
-        vk->device,
+    VkResult result = harmony_vk_pfn.vkGetSwapchainImagesKHR(
+        device,
         swapchain,
         &image_count,
         NULL
@@ -3235,18 +3137,13 @@ u32 harmony_vk_get_swapchain_image_count(const HarmonyVulkan *vk, VkSwapchainKHR
     return image_count;
 }
 
-void harmony_vk_get_swapchain_images(const HarmonyVulkan *vk, VkSwapchainKHR swapchain, VkImage *images, u32 count) {
-    harmony_assert(vk != NULL);
+void harmony_vk_get_swapchain_images(VkDevice device, VkSwapchainKHR swapchain, VkImage *images, u32 count) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(swapchain != NULL);
     harmony_assert(images != NULL);
-    harmony_assert(count == harmony_vk_get_swapchain_image_count(vk, swapchain));
+    harmony_assert(count == harmony_vk_get_swapchain_image_count(device, swapchain));
 
-    VkResult image_result = vk->pfn.vkGetSwapchainImagesKHR(
-        vk->device,
-        swapchain,
-        &count,
-        images
-    );
+    VkResult image_result = harmony_vk_pfn.vkGetSwapchainImagesKHR(device, swapchain, &count, images);
     switch (image_result) {
         case VK_SUCCESS: break;
         case VK_INCOMPLETE: {
@@ -3260,17 +3157,17 @@ void harmony_vk_get_swapchain_images(const HarmonyVulkan *vk, VkSwapchainKHR swa
 }
 
 u32 harmony_vk_acquire_next_image(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkSwapchainKHR swapchain,
     VkSemaphore signal_semaphore,
     VkFence signal_fence
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(swapchain != VK_NULL_HANDLE);
 
     u32 next_image;
-    const VkResult acquire_result = vk->pfn.vkAcquireNextImageKHR(
-        vk->device,
+    const VkResult acquire_result = harmony_vk_pfn.vkAcquireNextImageKHR(
+        device,
         swapchain,
         UINT64_MAX,
         signal_semaphore,
@@ -3298,14 +3195,12 @@ u32 harmony_vk_acquire_next_image(
 }
 
 void harmony_vk_present(
-    const HarmonyVulkan *vk,
     VkQueue queue,
     VkSwapchainKHR swapchain,
     u32 image_index,
     VkSemaphore *wait_semaphores,
     u32 semaphore_count
 ) {
-    harmony_assert(vk != NULL);
     harmony_assert(queue != VK_NULL_HANDLE);
     harmony_assert(swapchain != VK_NULL_HANDLE);
     if (semaphore_count > 0)
@@ -3319,7 +3214,7 @@ void harmony_vk_present(
         .pSwapchains = &swapchain,
         .pImageIndices = &image_index,
     };
-    const VkResult present_result = vk->pfn.vkQueuePresentKHR(queue, &present_info);
+    const VkResult present_result = harmony_vk_pfn.vkQueuePresentKHR(queue, &present_info);
     switch (present_result) {
         case VK_SUCCESS: break;
         case VK_SUBOPTIMAL_KHR: {
@@ -3338,16 +3233,16 @@ void harmony_vk_present(
     }
 }
 
-VkSemaphore harmony_vk_create_semaphore(const HarmonyVulkan *vk, VkSemaphoreCreateFlags flags) {
-    harmony_assert(vk != NULL);
+VkSemaphore harmony_vk_create_semaphore(VkDevice device, VkSemaphoreCreateFlags flags) {
+    harmony_assert(device != VK_NULL_HANDLE);
 
     VkSemaphoreCreateInfo semaphore_info = {
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
         .flags = flags,
     };
     VkSemaphore semaphore = VK_NULL_HANDLE;
-    const VkResult result = vk->pfn.vkCreateSemaphore(
-        vk->device,
+    const VkResult result = harmony_vk_pfn.vkCreateSemaphore(
+        device,
         &semaphore_info,
         NULL,
         &semaphore
@@ -3362,26 +3257,21 @@ VkSemaphore harmony_vk_create_semaphore(const HarmonyVulkan *vk, VkSemaphoreCrea
     return semaphore;
 }
 
-void harmony_vk_destroy_semaphore(const HarmonyVulkan *vk, VkSemaphore semaphore) {
-    harmony_assert(vk != NULL);
+void harmony_vk_destroy_semaphore(VkDevice device, VkSemaphore semaphore) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(semaphore != NULL);
-    vk->pfn.vkDestroySemaphore(vk->device, semaphore, NULL);
+    harmony_vk_pfn.vkDestroySemaphore(device, semaphore, NULL);
 }
 
-VkFence harmony_vk_create_fence(const HarmonyVulkan *vk, VkFenceCreateFlags flags) {
-    harmony_assert(vk != NULL);
+VkFence harmony_vk_create_fence(VkDevice device, VkFenceCreateFlags flags) {
+    harmony_assert(device != VK_NULL_HANDLE);
 
     VkFenceCreateInfo fence_info = {
         .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
         .flags = flags,
     };
     VkFence fence = VK_NULL_HANDLE;
-    const VkResult result = vk->pfn.vkCreateFence(
-        vk->device,
-        &fence_info,
-        NULL,
-        &fence
-    );
+    const VkResult result = harmony_vk_pfn.vkCreateFence(device, &fence_info, NULL, &fence);
     switch (result) {
         case VK_SUCCESS: break;
         case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
@@ -3392,18 +3282,18 @@ VkFence harmony_vk_create_fence(const HarmonyVulkan *vk, VkFenceCreateFlags flag
     return fence;
 }
 
-void harmony_vk_destroy_fence(const HarmonyVulkan *vk, VkFence fence) {
-    harmony_assert(vk != NULL);
+void harmony_vk_destroy_fence(VkDevice device, VkFence fence) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(fence != NULL);
-    vk->pfn.vkDestroyFence(vk->device, fence, NULL);
+    harmony_vk_pfn.vkDestroyFence(device, fence, NULL);
 }
 
-void harmony_vk_wait_for_fences(const HarmonyVulkan *vk, VkFence *fences, u32 count) {
-    harmony_assert(vk != NULL);
+void harmony_vk_wait_for_fences(VkDevice device, VkFence *fences, u32 count) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(fences != NULL);
     harmony_assert(count > 0);
 
-    VkResult result = vk->pfn.vkWaitForFences(vk->device, count, fences, VK_TRUE, UINT64_MAX);
+    VkResult result = harmony_vk_pfn.vkWaitForFences(device, count, fences, VK_TRUE, UINT64_MAX);
     switch (result) {
         case VK_SUCCESS: break;
         case VK_TIMEOUT: harmony_error("Vulkan timed out waiting for fence");
@@ -3417,12 +3307,12 @@ void harmony_vk_wait_for_fences(const HarmonyVulkan *vk, VkFence *fences, u32 co
     }
 }
 
-void harmony_vk_reset_fences(const HarmonyVulkan *vk, VkFence *fences, u32 count) {
-    harmony_assert(vk != NULL);
+void harmony_vk_reset_fences(VkDevice device, VkFence *fences, u32 count) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(fences != NULL);
     harmony_assert(count > 0);
 
-    VkResult result = vk->pfn.vkResetFences(vk->device, count, fences);
+    VkResult result = harmony_vk_pfn.vkResetFences(device, count, fences);
     switch (result) {
         case VK_SUCCESS: break;
         case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
@@ -3432,11 +3322,11 @@ void harmony_vk_reset_fences(const HarmonyVulkan *vk, VkFence *fences, u32 count
     }
 }
 
-bool harmony_vk_find_queue_family(const HarmonyVulkan *vk, u32 *queue_family, VkQueueFlags queue_flags) {
+bool harmony_vk_find_queue_family(VkPhysicalDevice gpu, u32 *queue_family, VkQueueFlags queue_flags) {
     *queue_family = UINT32_MAX;
 
     u32 queue_family_count = 0;
-    vk->pfn.vkGetPhysicalDeviceQueueFamilyProperties(vk->gpu, &queue_family_count, NULL);
+    harmony_vk_pfn.vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queue_family_count, NULL);
 
 #define HARMONY_MAX_QUEUE_FAMILIES 32
     if (queue_family_count > HARMONY_MAX_QUEUE_FAMILIES)
@@ -3444,7 +3334,7 @@ bool harmony_vk_find_queue_family(const HarmonyVulkan *vk, u32 *queue_family, Vk
     VkQueueFamilyProperties queue_families[HARMONY_MAX_QUEUE_FAMILIES];
 #undef HARMONY_MAX_QUEUE_FAMILIES
 
-    vk->pfn.vkGetPhysicalDeviceQueueFamilyProperties(vk->gpu, &queue_family_count, queue_families);
+    harmony_vk_pfn.vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queue_family_count, queue_families);
 
     for (u32 i = 0; i < queue_family_count; ++i) {
         if (queue_families[i].queueFlags & (queue_flags)) {
@@ -3455,23 +3345,24 @@ bool harmony_vk_find_queue_family(const HarmonyVulkan *vk, u32 *queue_family, Vk
     return false;
 }
 
-VkQueue harmony_vk_get_queue(const HarmonyVulkan *vk) {
-    harmony_assert(vk != NULL);
-    harmony_assert(vk->queue_family != UINT32_MAX);
+VkQueue harmony_vk_get_queue(VkDevice device, u32 queue_family, u32 queue_index) {
+    harmony_assert(device != VK_NULL_HANDLE);
+    harmony_assert(queue_family != UINT32_MAX);
+    harmony_assert(queue_index != UINT32_MAX);
 
     VkQueue queue = VK_NULL_HANDLE;
-    vk->pfn.vkGetDeviceQueue(vk->device, vk->queue_family, 0, &queue);
+    harmony_vk_pfn.vkGetDeviceQueue(device, queue_family, queue_index, &queue);
     if (queue == VK_NULL_HANDLE)
         harmony_error("Vulkan Device queue does not exist");
 
     return queue;
 }
 
-void harmony_vk_queue_wait(const HarmonyVulkan *vk, VkQueue queue) {
-    harmony_assert(vk != NULL);
+void harmony_vk_queue_wait(VkDevice device, VkQueue queue) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(queue != NULL);
 
-    VkResult wait_result = vk->pfn.vkQueueWaitIdle(queue);
+    VkResult wait_result = harmony_vk_pfn.vkQueueWaitIdle(queue);
     switch (wait_result) {
         case VK_SUCCESS: break;
         case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
@@ -3481,16 +3372,23 @@ void harmony_vk_queue_wait(const HarmonyVulkan *vk, VkQueue queue) {
     }
 }
 
-VkCommandPool harmony_vk_create_command_pool(const HarmonyVulkan *vk, VkCommandPoolCreateFlags flags) {
-    harmony_assert(vk != NULL);
+void harmony_vk_queue_submit(VkQueue queue, VkSubmitInfo *submits, u32 submit_count, VkFence fence) {
+    harmony_assert(queue != VK_NULL_HANDLE);
+    harmony_assert(submits != NULL);
+    harmony_assert(submit_count > 0);
+    harmony_vk_pfn.vkQueueSubmit(queue, submit_count, submits, fence);
+}
+
+VkCommandPool harmony_vk_create_command_pool(VkDevice device, u32 queue_family, VkCommandPoolCreateFlags flags) {
+    harmony_assert(device != VK_NULL_HANDLE);
 
     VkCommandPoolCreateInfo info = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .flags = flags,
-        .queueFamilyIndex = vk->queue_family,
+        .queueFamilyIndex = queue_family,
     };
     VkCommandPool pool = VK_NULL_HANDLE;
-    VkResult result = vk->pfn.vkCreateCommandPool(vk->device, &info, NULL, &pool);
+    VkResult result = harmony_vk_pfn.vkCreateCommandPool(device, &info, NULL, &pool);
     switch (result) {
         case VK_SUCCESS: break;
         case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
@@ -3502,19 +3400,14 @@ VkCommandPool harmony_vk_create_command_pool(const HarmonyVulkan *vk, VkCommandP
     return pool;
 }
 
-void harmony_vk_destroy_command_pool(const HarmonyVulkan *vk, VkCommandPool pool) {
-    harmony_assert(vk != NULL);
+void harmony_vk_destroy_command_pool(VkDevice device, VkCommandPool pool) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(pool != VK_NULL_HANDLE);
-    vk->pfn.vkDestroyCommandPool(vk->device, pool, NULL);
+    harmony_vk_pfn.vkDestroyCommandPool(device, pool, NULL);
 }
 
-void harmony_vk_allocate_command_buffers(
-    const HarmonyVulkan *vk,
-    VkCommandPool pool,
-    VkCommandBuffer *cmds,
-    u32 count
-) {
-    harmony_assert(vk != NULL);
+void harmony_vk_allocate_command_buffers(VkDevice device, VkCommandPool pool, VkCommandBuffer *cmds, u32 count) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(pool != VK_NULL_HANDLE);
     harmony_assert(cmds != NULL);
     harmony_assert(count != 0);
@@ -3524,8 +3417,8 @@ void harmony_vk_allocate_command_buffers(
         .commandPool = pool,
         .commandBufferCount = count,
     };
-    const VkResult result = vk->pfn.vkAllocateCommandBuffers(
-        vk->device,
+    const VkResult result = harmony_vk_pfn.vkAllocateCommandBuffers(
+        device,
         &alloc_info,
         cmds
     );
@@ -3537,26 +3430,21 @@ void harmony_vk_allocate_command_buffers(
     }
 }
 
-void harmony_vk_free_command_buffers(
-    const HarmonyVulkan *vk,
-    VkCommandPool pool,
-    VkCommandBuffer *cmds,
-    u32 count
-) {
-    harmony_assert(vk != NULL);
+void harmony_vk_free_command_buffers(VkDevice device, VkCommandPool pool, VkCommandBuffer *cmds, u32 count) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(pool != VK_NULL_HANDLE);
     harmony_assert(cmds != NULL);
     harmony_assert(count != 0);
-    vk->pfn.vkFreeCommandBuffers(vk->device, pool, count, cmds);
+    harmony_vk_pfn.vkFreeCommandBuffers(device, pool, count, cmds);
 }
 
 VkDescriptorPool harmony_vk_create_descriptor_pool(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     u32 max_sets,
     VkDescriptorPoolSize *sizes,
     u32 count
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(max_sets > 0);
     harmony_assert(sizes != NULL);
     harmony_assert(count > 0);
@@ -3570,7 +3458,7 @@ VkDescriptorPool harmony_vk_create_descriptor_pool(
         .pPoolSizes = sizes
     };
     VkDescriptorPool pool;
-    VkResult result = vk->pfn.vkCreateDescriptorPool(vk->device, &pool_info, NULL, &pool);
+    VkResult result = harmony_vk_pfn.vkCreateDescriptorPool(device, &pool_info, NULL, &pool);
     switch (result) {
         case VK_SUCCESS: break;
         case VK_ERROR_FRAGMENTATION_EXT: harmony_error("Vulkan fragmentation error");
@@ -3583,26 +3471,26 @@ VkDescriptorPool harmony_vk_create_descriptor_pool(
     return pool;
 }
 
-void harmony_vk_destroy_descriptor_pool(const HarmonyVulkan *vk, VkDescriptorPool pool) {
-    harmony_assert(vk != NULL);
+void harmony_vk_destroy_descriptor_pool(VkDevice device, VkDescriptorPool pool) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(pool != VK_NULL_HANDLE);
-    vk->pfn.vkDestroyDescriptorPool(vk->device, pool, NULL);
+    harmony_vk_pfn.vkDestroyDescriptorPool(device, pool, NULL);
 }
 
-void harmony_vk_reset_descriptor_pool(const HarmonyVulkan *vk, VkDescriptorPool pool) {
-    harmony_assert(vk != NULL);
+void harmony_vk_reset_descriptor_pool(VkDevice device, VkDescriptorPool pool) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(pool != VK_NULL_HANDLE);
-    vk->pfn.vkResetDescriptorPool(vk->device, pool, 0);
+    harmony_vk_pfn.vkResetDescriptorPool(device, pool, 0);
 }
 
 bool harmony_vk_allocate_descriptor_sets(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkDescriptorPool pool,
     VkDescriptorSetLayout *layouts,
     VkDescriptorSet *sets,
     u32 count
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(pool != VK_NULL_HANDLE);
     harmony_assert(layouts != NULL);
     harmony_assert(sets != NULL);
@@ -3614,7 +3502,7 @@ bool harmony_vk_allocate_descriptor_sets(
         .descriptorSetCount = count,
         .pSetLayouts = layouts,
     };
-    VkResult result = vk->pfn.vkAllocateDescriptorSets(vk->device, &alloc_info, sets);
+    VkResult result = harmony_vk_pfn.vkAllocateDescriptorSets(device, &alloc_info, sets);
     switch (result) {
         case VK_SUCCESS: return true;
         case VK_ERROR_FRAGMENTED_POOL:
@@ -3632,11 +3520,11 @@ bool harmony_vk_allocate_descriptor_sets(
 }
 
 VkDescriptorSetLayout harmony_vk_create_descriptor_set_layout(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     const VkDescriptorSetLayoutBinding *bindings,
     u32 count
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(bindings != NULL);
     harmony_assert(count > 0);
 
@@ -3646,7 +3534,7 @@ VkDescriptorSetLayout harmony_vk_create_descriptor_set_layout(
         .pBindings = bindings,
     };
     VkDescriptorSetLayout layout = VK_NULL_HANDLE;
-    const VkResult result = vk->pfn.vkCreateDescriptorSetLayout(vk->device, &layout_info, NULL, &layout);
+    const VkResult result = harmony_vk_pfn.vkCreateDescriptorSetLayout(device, &layout_info, NULL, &layout);
     switch (result) {
         case VK_SUCCESS: break;
         case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
@@ -3659,20 +3547,20 @@ VkDescriptorSetLayout harmony_vk_create_descriptor_set_layout(
     return layout;
 }
 
-void harmony_vk_destroy_descriptor_set_layout(const HarmonyVulkan *vk, VkDescriptorSetLayout layout) {
-    harmony_assert(vk != NULL);
+void harmony_vk_destroy_descriptor_set_layout(VkDevice device, VkDescriptorSetLayout layout) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(layout != VK_NULL_HANDLE);
-    vk->pfn.vkDestroyDescriptorSetLayout(vk->device, layout, NULL);
+    harmony_vk_pfn.vkDestroyDescriptorSetLayout(device, layout, NULL);
 }
 
 VkPipelineLayout harmony_vk_create_pipeline_layout(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     const VkDescriptorSetLayout* layouts,
     u32 layout_count,
     const VkPushConstantRange* push_constants,
     u32 push_constant_count
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(device != VK_NULL_HANDLE);
     if (layout_count > 0)
         harmony_assert(layouts != NULL);
     if (push_constant_count > 0)
@@ -3686,7 +3574,7 @@ VkPipelineLayout harmony_vk_create_pipeline_layout(
         .pPushConstantRanges = push_constants,
     };
     VkPipelineLayout layout = VK_NULL_HANDLE;
-    const VkResult result = vk->pfn.vkCreatePipelineLayout(vk->device, &pipeline_layout_info, NULL, &layout);
+    const VkResult result = harmony_vk_pfn.vkCreatePipelineLayout(device, &pipeline_layout_info, NULL, &layout);
     switch (result) {
         case VK_SUCCESS: break;
         case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
@@ -3699,14 +3587,14 @@ VkPipelineLayout harmony_vk_create_pipeline_layout(
     return layout;
 }
 
-void harmony_vk_destroy_pipeline_layout(const HarmonyVulkan *vk, VkPipelineLayout layout) {
-    harmony_assert(vk != NULL);
+void harmony_vk_destroy_pipeline_layout(VkDevice device, VkPipelineLayout layout) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(layout != VK_NULL_HANDLE);
-    vk->pfn.vkDestroyPipelineLayout(vk->device, layout, NULL);
+    harmony_vk_pfn.vkDestroyPipelineLayout(device, layout, NULL);
 }
 
-VkShaderModule harmony_vk_create_shader_module(const HarmonyVulkan *vk, const u8 *code, usize size) {
-    harmony_assert(vk != NULL);
+VkShaderModule harmony_vk_create_shader_module(VkDevice device, const u8 *code, usize size) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(code != NULL);
     harmony_assert(size > 0);
 
@@ -3716,7 +3604,7 @@ VkShaderModule harmony_vk_create_shader_module(const HarmonyVulkan *vk, const u8
         .pCode = (const u32*)code,
     };
     VkShaderModule shader_module = VK_NULL_HANDLE;
-    const VkResult result = vk->pfn.vkCreateShaderModule(vk->device, &shader_module_info, NULL, &shader_module);
+    const VkResult result = harmony_vk_pfn.vkCreateShaderModule(device, &shader_module_info, NULL, &shader_module);
     switch (result) {
         case VK_SUCCESS: break;
         case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
@@ -3730,14 +3618,14 @@ VkShaderModule harmony_vk_create_shader_module(const HarmonyVulkan *vk, const u8
     return shader_module;
 }
 
-void harmony_vk_destroy_shader_module(const HarmonyVulkan *vk, VkShaderModule shader_module) {
-    harmony_assert(vk != NULL);
+void harmony_vk_destroy_shader_module(VkDevice device, VkShaderModule shader_module) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(shader_module != VK_NULL_HANDLE);
-    vk->pfn.vkDestroyShaderModule(vk->device, shader_module, NULL);
+    harmony_vk_pfn.vkDestroyShaderModule(device, shader_module, NULL);
 }
 
-VkPipeline harmony_vk_create_graphics_pipeline(const HarmonyVulkan *vk, const HarmonyVkPipelineConfig *config) {
-    harmony_assert(vk != NULL);
+VkPipeline harmony_vk_create_graphics_pipeline(VkDevice device, const HarmonyVkPipelineConfig *config) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(config != NULL);
     harmony_assert(config->layout != NULL);
     harmony_assert(config->shaders != NULL);
@@ -3889,7 +3777,7 @@ VkPipeline harmony_vk_create_graphics_pipeline(const HarmonyVulkan *vk, const Ha
     };
 
     VkPipeline pipeline = VK_NULL_HANDLE;
-    VkResult result = vk->pfn.vkCreateGraphicsPipelines(vk->device, VK_NULL_HANDLE, 1, &pipeline_info, NULL, &pipeline);
+    VkResult result = harmony_vk_pfn.vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipeline_info, NULL, &pipeline);
     switch (result) {
         case VK_SUCCESS: break;
         case VK_PIPELINE_COMPILE_REQUIRED_EXT: {
@@ -3906,8 +3794,8 @@ VkPipeline harmony_vk_create_graphics_pipeline(const HarmonyVulkan *vk, const Ha
     return pipeline;
 }
 
-VkPipeline harmony_vk_create_compute_pipeline(const HarmonyVulkan *vk, const HarmonyVkPipelineConfig *config) {
-    harmony_assert(vk != NULL);
+VkPipeline harmony_vk_create_compute_pipeline(VkDevice device, const HarmonyVkPipelineConfig *config) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(config != NULL);
     harmony_assert(config->layout != NULL);
     harmony_assert(config->shaders != NULL);
@@ -3937,7 +3825,7 @@ VkPipeline harmony_vk_create_compute_pipeline(const HarmonyVulkan *vk, const Har
     };
 
     VkPipeline pipeline = VK_NULL_HANDLE;
-    VkResult result = vk->pfn.vkCreateComputePipelines(vk->device, VK_NULL_HANDLE, 1, &pipeline_info, NULL, &pipeline);
+    VkResult result = harmony_vk_pfn.vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipeline_info, NULL, &pipeline);
     switch (result) {
         case VK_SUCCESS: break;
         case VK_PIPELINE_COMPILE_REQUIRED_EXT: {
@@ -3954,14 +3842,14 @@ VkPipeline harmony_vk_create_compute_pipeline(const HarmonyVulkan *vk, const Har
     return pipeline;
 }
 
-void harmony_vk_destroy_pipeline(const HarmonyVulkan *vk, VkPipeline pipeline) {
-    harmony_assert(vk != NULL);
+void harmony_vk_destroy_pipeline(VkDevice device, VkPipeline pipeline) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(pipeline != VK_NULL_HANDLE);
-    vk->pfn.vkDestroyPipeline(vk->device, pipeline, NULL);
+    harmony_vk_pfn.vkDestroyPipeline(device, pipeline, NULL);
 }
 
-VkBuffer harmony_vk_create_buffer(const HarmonyVulkan *vk, usize size, VkBufferUsageFlags usage) {
-    harmony_assert(vk != NULL);
+VkBuffer harmony_vk_create_buffer(VkDevice device, usize size, VkBufferUsageFlags usage) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(size > 0);
     harmony_assert(usage != 0);
 
@@ -3971,7 +3859,7 @@ VkBuffer harmony_vk_create_buffer(const HarmonyVulkan *vk, usize size, VkBufferU
         .usage = usage,
     };
     VkBuffer buffer = VK_NULL_HANDLE;
-    VkResult result = vk->pfn.vkCreateBuffer(vk->device, &buffer_info, NULL, &buffer);
+    VkResult result = harmony_vk_pfn.vkCreateBuffer(device, &buffer_info, NULL, &buffer);
     switch (result) {
         case VK_SUCCESS: break;
         case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
@@ -3984,14 +3872,14 @@ VkBuffer harmony_vk_create_buffer(const HarmonyVulkan *vk, usize size, VkBufferU
     return buffer;
 }
 
-void harmony_vk_destroy_buffer(const HarmonyVulkan *vk, VkBuffer buffer) {
-    harmony_assert(vk != NULL);
+void harmony_vk_destroy_buffer(VkDevice device, VkBuffer buffer) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(buffer != VK_NULL_HANDLE);
-    vk->pfn.vkDestroyBuffer(vk->device, buffer, NULL);
+    harmony_vk_pfn.vkDestroyBuffer(device, buffer, NULL);
 }
 
-VkImage harmony_vk_create_image(const HarmonyVulkan *vk, const HarmonyVkImageConfig *config) {
-    harmony_assert(vk != NULL);
+VkImage harmony_vk_create_image(VkDevice device, const HarmonyVkImageConfig *config) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(config->format != VK_FORMAT_UNDEFINED);
     harmony_assert(config->usage != 0);
     u32 width = harmony_max(config->width, 1);
@@ -4069,7 +3957,7 @@ VkImage harmony_vk_create_image(const HarmonyVulkan *vk, const HarmonyVkImageCon
     };
 
     VkImage image = VK_NULL_HANDLE;
-    VkResult result = vk->pfn.vkCreateImage(vk->device, &image_info, NULL, &image);
+    VkResult result = harmony_vk_pfn.vkCreateImage(device, &image_info, NULL, &image);
     switch (result) {
         case VK_SUCCESS: break;
         case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
@@ -4083,18 +3971,18 @@ VkImage harmony_vk_create_image(const HarmonyVulkan *vk, const HarmonyVkImageCon
     return image;
 }
 
-void harmony_vk_destroy_image(const HarmonyVulkan *vk, VkImage image) {
-    harmony_assert(vk != NULL);
+void harmony_vk_destroy_image(VkDevice device, VkImage image) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(image != NULL);
-    vk->pfn.vkDestroyImage(vk->device, image, NULL);
+    harmony_vk_pfn.vkDestroyImage(device, image, NULL);
 }
 
 VkImageView harmony_vk_create_image_view(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkImage image,
     HarmonyVkImageViewConfig *config
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(image != VK_NULL_HANDLE);
     harmony_assert(config != NULL);
     harmony_assert(config->format != VK_FORMAT_UNDEFINED);
@@ -4115,7 +4003,7 @@ VkImageView harmony_vk_create_image_view(
     };
 
     VkImageView view = VK_NULL_HANDLE;
-    VkResult result = vk->pfn.vkCreateImageView(vk->device, &view_info, NULL, &view);
+    VkResult result = harmony_vk_pfn.vkCreateImageView(device, &view_info, NULL, &view);
     switch (result) {
         case VK_SUCCESS: break;
         case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
@@ -4127,15 +4015,14 @@ VkImageView harmony_vk_create_image_view(
     return view;
 }
 
-void harmony_vk_destroy_image_view(const HarmonyVulkan *vk, VkImageView view) {
-    harmony_assert(vk != NULL);
+void harmony_vk_destroy_image_view(VkDevice device, VkImageView view) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(view != VK_NULL_HANDLE);
-    vk->pfn.vkDestroyImageView(vk->device, view, NULL);
+    harmony_vk_pfn.vkDestroyImageView(device, view, NULL);
 }
 
-VkSampler harmony_vk_create_sampler(const HarmonyVulkan *vk, VkFilter filter, VkSamplerAddressMode edge_mode) {
-    VkPhysicalDeviceProperties gpu_properties = {0};
-    vk->pfn.vkGetPhysicalDeviceProperties(vk->gpu, &gpu_properties);
+VkSampler harmony_vk_create_sampler(VkDevice device, VkFilter filter, VkSamplerAddressMode edge_mode) {
+    harmony_assert(device != VK_NULL_HANDLE);
 
     VkSamplerCreateInfo sampler_info = {
         .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
@@ -4145,14 +4032,11 @@ VkSampler harmony_vk_create_sampler(const HarmonyVulkan *vk, VkFilter filter, Vk
         .addressModeU = edge_mode,
         .addressModeV = edge_mode,
         .addressModeW = edge_mode,
-        .anisotropyEnable = VK_TRUE,
-        .maxAnisotropy = gpu_properties.limits.maxSamplerAnisotropy,
-        .maxLod = 1000.0f,
-        .borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+        .maxLod = VK_LOD_CLAMP_NONE,
     };
 
     VkSampler sampler = VK_NULL_HANDLE;
-    VkResult sampler_result = vk->pfn.vkCreateSampler(vk->device, &sampler_info, NULL, &sampler);
+    VkResult sampler_result = harmony_vk_pfn.vkCreateSampler(device, &sampler_info, NULL, &sampler);
     switch (sampler_result) {
         case VK_SUCCESS: break;
         case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
@@ -4164,39 +4048,39 @@ VkSampler harmony_vk_create_sampler(const HarmonyVulkan *vk, VkFilter filter, Vk
     return sampler;
 }
 
-void harmony_vk_destroy_sampler(const HarmonyVulkan *vk, VkSampler sampler) {
-    harmony_assert(vk != NULL);
+void harmony_vk_destroy_sampler(VkDevice device, VkSampler sampler) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(sampler != VK_NULL_HANDLE);
-    vk->pfn.vkDestroySampler(vk->device, sampler, NULL);
+    harmony_vk_pfn.vkDestroySampler(device, sampler, NULL);
 }
 
-VkMemoryRequirements harmony_vk_get_buffer_mem_reqs(const HarmonyVulkan *vk, VkBuffer buffer) {
-    harmony_assert(vk != NULL);
+VkMemoryRequirements harmony_vk_get_buffer_mem_reqs(VkDevice device, VkBuffer buffer) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(buffer != VK_NULL_HANDLE);
     VkMemoryRequirements reqs;
-    vk->pfn.vkGetBufferMemoryRequirements(vk->device, buffer, &reqs);
+    harmony_vk_pfn.vkGetBufferMemoryRequirements(device, buffer, &reqs);
     return reqs;
 }
 
-VkMemoryRequirements harmony_vk_get_image_mem_reqs(const HarmonyVulkan *vk, VkImage image) {
-    harmony_assert(vk != NULL);
+VkMemoryRequirements harmony_vk_get_image_mem_reqs(VkDevice device, VkImage image) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(image != VK_NULL_HANDLE);
     VkMemoryRequirements reqs;
-    vk->pfn.vkGetImageMemoryRequirements(vk->device, image, &reqs);
+    harmony_vk_pfn.vkGetImageMemoryRequirements(device, image, &reqs);
     return reqs;
 }
 
 static u32 harmony_vk_find_memory_type_index(
-    const HarmonyVulkan *vk,
+    VkPhysicalDevice gpu,
     u32 bitmask,
     VkMemoryPropertyFlags desired_flags,
     VkMemoryPropertyFlags undesired_flags
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(gpu != VK_NULL_HANDLE);
     harmony_assert(bitmask != 0);
 
     VkPhysicalDeviceMemoryProperties mem_props;
-    vk->pfn.vkGetPhysicalDeviceMemoryProperties(vk->gpu, &mem_props);
+    harmony_vk_pfn.vkGetPhysicalDeviceMemoryProperties(gpu, &mem_props);
 
     for (uint32_t i = 0; i < mem_props.memoryTypeCount; ++i) {
         if ((bitmask & (1 << i))) {
@@ -4225,21 +4109,22 @@ static u32 harmony_vk_find_memory_type_index(
 }
 
 VkDeviceMemory harmony_vk_allocate_memory(
-    const HarmonyVulkan *vk,
+    VkDevice device,
+    VkPhysicalDevice gpu,
     VkMemoryRequirements *mem_reqs,
     VkMemoryPropertyFlags desired_flags,
     VkMemoryPropertyFlags undesired_flags
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(mem_reqs != NULL);
 
     VkMemoryAllocateInfo alloc_info = {
         .allocationSize = mem_reqs->size,
         .memoryTypeIndex = harmony_vk_find_memory_type_index(
-            vk, mem_reqs->memoryTypeBits, desired_flags, undesired_flags),
+            gpu, mem_reqs->memoryTypeBits, desired_flags, undesired_flags),
     };
     VkDeviceMemory memory = VK_NULL_HANDLE;
-    VkResult result = vk->pfn.vkAllocateMemory(vk->device, &alloc_info, NULL, &memory);
+    VkResult result = harmony_vk_pfn.vkAllocateMemory(device, &alloc_info, NULL, &memory);
     switch (result) {
         case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
         case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
@@ -4253,18 +4138,18 @@ VkDeviceMemory harmony_vk_allocate_memory(
     return memory;
 }
 
-void harmony_vk_free_memory(const HarmonyVulkan *vk, VkDeviceMemory memory) {
-    harmony_assert(vk != NULL);
+void harmony_vk_free_memory(VkDevice device, VkDeviceMemory memory) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(memory != VK_NULL_HANDLE);
-    vk->pfn.vkFreeMemory(vk->device, memory, NULL);
+    harmony_vk_pfn.vkFreeMemory(device, memory, NULL);
 }
 
-void harmony_vk_bind_buffer_memory(const HarmonyVulkan *vk, VkBuffer buffer, VkDeviceMemory memory, usize offset) {
-    harmony_assert(vk != NULL);
+void harmony_vk_bind_buffer_memory(VkDevice device, VkBuffer buffer, VkDeviceMemory memory, usize offset) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(buffer != VK_NULL_HANDLE);
     harmony_assert(memory != VK_NULL_HANDLE);
 
-    VkResult result = vk->pfn.vkBindBufferMemory(vk->device, buffer, memory, offset);
+    VkResult result = harmony_vk_pfn.vkBindBufferMemory(device, buffer, memory, offset);
     switch (result) {
         case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
         case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
@@ -4275,12 +4160,12 @@ void harmony_vk_bind_buffer_memory(const HarmonyVulkan *vk, VkBuffer buffer, VkD
     }
 }
 
-void harmony_vk_bind_image_memory(const HarmonyVulkan *vk, VkImage image, VkDeviceMemory memory, usize offset) {
-    harmony_assert(vk != NULL);
+void harmony_vk_bind_image_memory(VkDevice device, VkImage image, VkDeviceMemory memory, usize offset) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(image != VK_NULL_HANDLE);
     harmony_assert(memory != VK_NULL_HANDLE);
 
-    VkResult result = vk->pfn.vkBindImageMemory(vk->device, image, memory, offset);
+    VkResult result = harmony_vk_pfn.vkBindImageMemory(device, image, memory, offset);
     switch (result) {
         case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
         case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
@@ -4291,13 +4176,13 @@ void harmony_vk_bind_image_memory(const HarmonyVulkan *vk, VkImage image, VkDevi
     }
 }
 
-void *harmony_vk_map_memory(const HarmonyVulkan *vk, VkDeviceMemory memory, usize offset, usize size) {
-    harmony_assert(vk != NULL);
+void *harmony_vk_map_memory(VkDevice device, VkDeviceMemory memory, usize offset, usize size) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(memory != VK_NULL_HANDLE);
     harmony_assert(size > 0);
 
     void *data;
-    VkResult result = vk->pfn.vkMapMemory(vk->device, memory, offset, size, 0, &data);
+    VkResult result = harmony_vk_pfn.vkMapMemory(device, memory, offset, size, 0, &data);
     switch (result) {
         case VK_ERROR_MEMORY_MAP_FAILED: harmony_error("Vulkan memory map failed");
         case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
@@ -4310,36 +4195,14 @@ void *harmony_vk_map_memory(const HarmonyVulkan *vk, VkDeviceMemory memory, usiz
     return data;
 }
 
-void harmony_vk_unmap_memory(const HarmonyVulkan *vk, VkDeviceMemory memory) {
-    harmony_assert(vk != NULL);
+void harmony_vk_unmap_memory(VkDevice device, VkDeviceMemory memory) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(memory != VK_NULL_HANDLE);
-    vk->pfn.vkUnmapMemory(vk->device, memory);
+    harmony_vk_pfn.vkUnmapMemory(device, memory);
 }
 
-void harmony_vk_flush_memory(const HarmonyVulkan *vk, VkDeviceMemory memory, usize offset, usize size) {
-    harmony_assert(vk != NULL);
-    harmony_assert(memory != VK_NULL_HANDLE);
-    harmony_assert(size > 0);
-
-    VkMappedMemoryRange range = {
-        .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-        .memory = memory,
-        .offset = offset,
-        .size = size,
-    };
-
-    VkResult result = vk->pfn.vkFlushMappedMemoryRanges(vk->device, 1, &range);
-    switch (result) {
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
-        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error");
-        default: harmony_error("Unexpected Vulkan error");
-    }
-}
-
-void harmony_vk_invalidate_memory(const HarmonyVulkan *vk, VkDeviceMemory memory, usize offset, usize size) {
-    harmony_assert(vk != NULL);
+void harmony_vk_flush_memory(VkDevice device, VkDeviceMemory memory, usize offset, usize size) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(memory != VK_NULL_HANDLE);
     harmony_assert(size > 0);
 
@@ -4350,7 +4213,7 @@ void harmony_vk_invalidate_memory(const HarmonyVulkan *vk, VkDeviceMemory memory
         .size = size,
     };
 
-    VkResult result = vk->pfn.vkInvalidateMappedMemoryRanges(vk->device, 1, &range);
+    VkResult result = harmony_vk_pfn.vkFlushMappedMemoryRanges(device, 1, &range);
     switch (result) {
         case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
         case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
@@ -4360,15 +4223,37 @@ void harmony_vk_invalidate_memory(const HarmonyVulkan *vk, VkDeviceMemory memory
     }
 }
 
-void harmony_vk_begin_cmd(const HarmonyVulkan *vk, VkCommandBuffer cmd, VkCommandBufferUsageFlags flags) {
-    harmony_assert(vk != NULL);
+void harmony_vk_invalidate_memory(VkDevice device, VkDeviceMemory memory, usize offset, usize size) {
+    harmony_assert(device != VK_NULL_HANDLE);
+    harmony_assert(memory != VK_NULL_HANDLE);
+    harmony_assert(size > 0);
+
+    VkMappedMemoryRange range = {
+        .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+        .memory = memory,
+        .offset = offset,
+        .size = size,
+    };
+
+    VkResult result = harmony_vk_pfn.vkInvalidateMappedMemoryRanges(device, 1, &range);
+    switch (result) {
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
+        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
+        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error");
+        default: harmony_error("Unexpected Vulkan error");
+    }
+}
+
+void harmony_vk_begin_cmd(VkDevice device, VkCommandBuffer cmd, VkCommandBufferUsageFlags flags) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
 
     const VkCommandBufferBeginInfo begin_info = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = flags,
     };
-    VkResult result = vk->pfn.vkBeginCommandBuffer(cmd, &begin_info);
+    VkResult result = harmony_vk_pfn.vkBeginCommandBuffer(cmd, &begin_info);
     switch (result) {
         case VK_SUCCESS: break;
         case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
@@ -4377,10 +4262,10 @@ void harmony_vk_begin_cmd(const HarmonyVulkan *vk, VkCommandBuffer cmd, VkComman
     }
 }
 
-void harmony_vk_end_cmd(const HarmonyVulkan *vk, VkCommandBuffer cmd) {
-    harmony_assert(vk != NULL);
+void harmony_vk_end_cmd(VkDevice device, VkCommandBuffer cmd) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
-    VkResult result = vk->pfn.vkEndCommandBuffer(cmd);
+    VkResult result = harmony_vk_pfn.vkEndCommandBuffer(cmd);
     switch (result) {
         case VK_SUCCESS: break;
         case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
@@ -4391,37 +4276,37 @@ void harmony_vk_end_cmd(const HarmonyVulkan *vk, VkCommandBuffer cmd) {
 }
 
 void harmony_vk_copy_buffer(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     VkBuffer dst,
     VkBuffer src,
     const VkBufferCopy *regions,
     u32 region_count
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(dst != NULL);
     harmony_assert(src != NULL);
     harmony_assert(regions != NULL);
     harmony_assert(region_count > 0);
-    vk->pfn.vkCmdCopyBuffer(cmd, src, dst, region_count, regions);
+    harmony_vk_pfn.vkCmdCopyBuffer(cmd, src, dst, region_count, regions);
 }
 
 void harmony_vk_copy_image(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     VkImage dst,
     VkImage src,
     const VkImageCopy *regions,
     u32 region_count
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(dst != NULL);
     harmony_assert(src != NULL);
     harmony_assert(regions != NULL);
     harmony_assert(region_count > 0);
-    vk->pfn.vkCmdCopyImage(
+    harmony_vk_pfn.vkCmdCopyImage(
         cmd,
         src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -4430,7 +4315,7 @@ void harmony_vk_copy_image(
 }
 
 void harmony_vk_blit_image(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     VkImage dst,
     VkImage src,
@@ -4438,13 +4323,13 @@ void harmony_vk_blit_image(
     u32 region_count,
     VkFilter filter
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(dst != NULL);
     harmony_assert(src != NULL);
     harmony_assert(regions != NULL);
     harmony_assert(region_count > 0);
-    vk->pfn.vkCmdBlitImage(
+    harmony_vk_pfn.vkCmdBlitImage(
         cmd,
         src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -4454,20 +4339,20 @@ void harmony_vk_blit_image(
 }
 
 void harmony_vk_copy_buffer_to_image(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     VkImage dst,
     VkBuffer src,
     VkBufferImageCopy *regions,
     u32 region_count
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(dst != NULL);
     harmony_assert(src != NULL);
     harmony_assert(regions != NULL);
     harmony_assert(region_count > 0);
-    vk->pfn.vkCmdCopyBufferToImage(
+    harmony_vk_pfn.vkCmdCopyBufferToImage(
         cmd,
         src,
         dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -4476,20 +4361,20 @@ void harmony_vk_copy_buffer_to_image(
 }
 
 void harmony_vk_copy_image_to_buffer(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     VkBuffer dst,
     VkImage src,
     VkBufferImageCopy *regions,
     u32 region_count
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(dst != NULL);
     harmony_assert(src != NULL);
     harmony_assert(regions != NULL);
     harmony_assert(region_count > 0);
-    vk->pfn.vkCmdCopyImageToBuffer(
+    harmony_vk_pfn.vkCmdCopyImageToBuffer(
         cmd,
         src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         dst,
@@ -4497,28 +4382,28 @@ void harmony_vk_copy_image_to_buffer(
         regions);
 }
 
-void harmony_vk_pipeline_barrier(const HarmonyVulkan *vk, VkCommandBuffer cmd, const VkDependencyInfo *dependencies) {
-    harmony_assert(vk != NULL);
+void harmony_vk_pipeline_barrier(VkDevice device, VkCommandBuffer cmd, const VkDependencyInfo *dependencies) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(dependencies != NULL);
-    vk->pfn.vkCmdPipelineBarrier2(cmd, dependencies);
+    harmony_vk_pfn.vkCmdPipelineBarrier2(cmd, dependencies);
 }
 
-void harmony_vk_begin_rendering(const HarmonyVulkan *vk, VkCommandBuffer cmd, const VkRenderingInfo *info) {
-    harmony_assert(vk != NULL);
+void harmony_vk_begin_rendering(VkDevice device, VkCommandBuffer cmd, const VkRenderingInfo *info) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(info != NULL);
-    vk->pfn.vkCmdBeginRendering(cmd, info);
+    harmony_vk_pfn.vkCmdBeginRendering(cmd, info);
 }
 
-void harmony_vk_end_rendering(const HarmonyVulkan *vk, VkCommandBuffer cmd) {
-    harmony_assert(vk != NULL);
+void harmony_vk_end_rendering(VkDevice device, VkCommandBuffer cmd) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
-    vk->pfn.vkCmdEndRendering(cmd);
+    harmony_vk_pfn.vkCmdEndRendering(cmd);
 }
 
 void harmony_vk_set_viewport(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     float x,
     float y,
@@ -4527,33 +4412,33 @@ void harmony_vk_set_viewport(
     float near,
     float far
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     VkViewport viewport = {x, y, width, height, near, far};
-    vk->pfn.vkCmdSetViewport(cmd, 0, 1, &viewport);
+    harmony_vk_pfn.vkCmdSetViewport(cmd, 0, 1, &viewport);
 }
 
-void harmony_vk_set_scissor(const HarmonyVulkan *vk, VkCommandBuffer cmd, i32 x, i32 y, u32 width, u32 height) {
-    harmony_assert(vk != NULL);
+void harmony_vk_set_scissor(VkDevice device, VkCommandBuffer cmd, i32 x, i32 y, u32 width, u32 height) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     VkRect2D scissor = {{x, y}, {width, height}};
-    vk->pfn.vkCmdSetScissor(cmd, 0, 1, &scissor);
+    harmony_vk_pfn.vkCmdSetScissor(cmd, 0, 1, &scissor);
 }
 
 void harmony_vk_bind_pipeline(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     VkPipeline pipeline,
     VkPipelineBindPoint bind_point
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(pipeline != VK_NULL_HANDLE);
-    vk->pfn.vkCmdBindPipeline(cmd, bind_point, pipeline);
+    harmony_vk_pfn.vkCmdBindPipeline(cmd, bind_point, pipeline);
 }
 
 void harmony_vk_bind_descriptor_sets(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     VkPipelineLayout layout,
     VkPipelineBindPoint bind_point,
@@ -4561,14 +4446,14 @@ void harmony_vk_bind_descriptor_sets(
     u32 set_count,
     const VkDescriptorSet *descriptor_sets
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(layout != VK_NULL_HANDLE);
-    vk->pfn.vkCmdBindDescriptorSets(cmd, bind_point, layout, begin_index, set_count, descriptor_sets, 0, NULL);
+    harmony_vk_pfn.vkCmdBindDescriptorSets(cmd, bind_point, layout, begin_index, set_count, descriptor_sets, 0, NULL);
 }
 
 void harmony_vk_push_constants(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     VkPipelineLayout layout,
     VkShaderStageFlags stages,
@@ -4576,17 +4461,17 @@ void harmony_vk_push_constants(
     u32 size,
     const void *data
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(layout != VK_NULL_HANDLE);
     harmony_assert(stages != 0);
     harmony_assert(data != NULL);
     harmony_assert(size > 0);
-    vk->pfn.vkCmdPushConstants(cmd, layout, stages, offset, size, data);
+    harmony_vk_pfn.vkCmdPushConstants(cmd, layout, stages, offset, size, data);
 }
 
 void harmony_vk_bind_vertex_buffers(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     u32 begin_index,
     u32 count,
@@ -4594,51 +4479,51 @@ void harmony_vk_bind_vertex_buffers(
     usize *offsets
 
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(count > 0);
     harmony_assert(vertex_buffers != NULL);
     harmony_assert(offsets != NULL);
-    vk->pfn.vkCmdBindVertexBuffers(cmd, begin_index, count, vertex_buffers, offsets);
+    harmony_vk_pfn.vkCmdBindVertexBuffers(cmd, begin_index, count, vertex_buffers, offsets);
 }
 
-void harmony_vk_bind_vertex_buffer(const HarmonyVulkan *vk, VkCommandBuffer cmd, VkBuffer vertex_buffer) {
-    harmony_assert(vk != NULL);
+void harmony_vk_bind_vertex_buffer(VkDevice device, VkCommandBuffer cmd, VkBuffer vertex_buffer) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(vertex_buffer != VK_NULL_HANDLE);
-    vk->pfn.vkCmdBindVertexBuffers(cmd, 0, 1, &vertex_buffer, &(usize){0});
+    harmony_vk_pfn.vkCmdBindVertexBuffers(cmd, 0, 1, &vertex_buffer, &(usize){0});
 }
 
 void harmony_vk_bind_index_buffer(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     VkBuffer index_buffer,
     usize offset,
     VkIndexType type
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(index_buffer != VK_NULL_HANDLE);
-    vk->pfn.vkCmdBindIndexBuffer(cmd, index_buffer, offset, type);
+    harmony_vk_pfn.vkCmdBindIndexBuffer(cmd, index_buffer, offset, type);
 }
 
 void harmony_vk_draw(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     u32 first_vertex,
     u32 vertex_count,
     u32 first_instance,
     u32 instance_count
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(vertex_count > 0);
     harmony_assert(instance_count > 0);
-    vk->pfn.vkCmdDraw(cmd, vertex_count, instance_count, first_vertex, first_instance);
+    harmony_vk_pfn.vkCmdDraw(cmd, vertex_count, instance_count, first_vertex, first_instance);
 }
 
 void harmony_vk_draw_indexed(
-    const HarmonyVulkan *vk,
+    VkDevice device,
     VkCommandBuffer cmd,
     u32 vertex_offset,
     u32 first_index,
@@ -4646,20 +4531,20 @@ void harmony_vk_draw_indexed(
     u32 first_instance,
     u32 instance_count
 ) {
-    harmony_assert(vk != NULL);
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(index_count > 0);
     harmony_assert(instance_count > 0);
-    vk->pfn.vkCmdDrawIndexed(cmd, index_count, instance_count, first_index, (i32)vertex_offset, first_instance);
+    harmony_vk_pfn.vkCmdDrawIndexed(cmd, index_count, instance_count, first_index, (i32)vertex_offset, first_instance);
 }
 
-void harmony_vk_dispatch(const HarmonyVulkan *vk, VkCommandBuffer cmd, u32 x, u32 y, u32 z) {
-    harmony_assert(vk != NULL);
+void harmony_vk_dispatch(VkDevice device, VkCommandBuffer cmd, u32 x, u32 y, u32 z) {
+    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(x > 0);
     harmony_assert(y > 0);
     harmony_assert(z > 0);
-    vk->pfn.vkCmdDispatch(cmd, x, y, z);
+    harmony_vk_pfn.vkCmdDispatch(cmd, x, y, z);
 }
 
 #endif // defined(HARMONY_IMPLEMENTATION_GRAPHICS) || defined(HARMONY_IMPLEMENTATION_ALL)

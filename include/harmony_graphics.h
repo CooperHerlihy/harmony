@@ -507,14 +507,16 @@ void harmony_vk_get_swapchain_images(VkDevice device, VkSwapchainKHR swapchain, 
  * Parameters
  * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - swapchain The swapchain to get from, must not be VK_NULL_HANDLE
+ * - image_index A pointer to store the index
  * - signal_semaphore The semaphore to signal, may be VK_NULL_HANDLE
  * - signal_fence The fence to signal, may be VK_NULL_HANDLE
  * Returns
- * - The index of the next image
+ * - Whether the image was acquired successfully
  */
-u32 harmony_vk_acquire_next_image(
+bool harmony_vk_acquire_next_image(
     VkDevice device,
     VkSwapchainKHR swapchain,
+    u32 *image_index,
     VkSemaphore signal_semaphore,
     VkFence signal_fence);
 
@@ -640,7 +642,7 @@ void harmony_vk_queue_wait(VkDevice device, VkQueue queue);
  * - submit_count The number of submissions, must be greater than 0
  * - fence The optional fence to signal upon completion, may be VK_NULL_HANDLE
  */
-void harmony_vk_queue_submit(VkQueue queue, VkSubmitInfo *submits, u32 submit_count, VkFence fence);
+void harmony_vk_submit_commands(VkQueue queue, VkSubmitInfo *submits, u32 submit_count, VkFence fence);
 
 /**
  * Creates a Vulkan command pool
@@ -684,6 +686,15 @@ void harmony_vk_allocate_command_buffers(VkDevice device, VkCommandPool pool, Vk
  * - count The size of cmds and the number of command buffers to free
  */
 void harmony_vk_free_command_buffers(VkDevice device, VkCommandPool pool, VkCommandBuffer *cmds, u32 count);
+
+/**
+ * Resets a Vulkan command buffer
+ *
+ * Parameters
+ * - cmd The command buffer to reset
+ * - flags The optional flags to use
+ */
+void harmony_vk_reset_command_buffer(VkCommandBuffer cmd, VkCommandBufferResetFlags flags);
 
 /**
  * Creates a Vulkan descriptor pool
@@ -1204,10 +1215,9 @@ void harmony_vk_begin_cmd(VkDevice device, VkCommandBuffer cmd, VkCommandBufferU
  * Ends recording of a command buffer
  *
  * Parameters
- * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer to finish, must not be VK_NULL_HANDLE
  */
-void harmony_vk_end_cmd(VkDevice device, VkCommandBuffer cmd);
+void harmony_vk_end_cmd(VkCommandBuffer cmd);
 
 /**
  * Copies data from one buffer to another
@@ -1310,36 +1320,32 @@ void harmony_vk_copy_image_to_buffer(
  * Inserts a pipeline barrier using Vulkan synchronization2
  *
  * Parameters
- * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer to write to, must not be VK_NULL_HANDLE
  * - dependencies The dependency info, must not be NULL
  */
-void harmony_vk_pipeline_barrier(VkDevice device, VkCommandBuffer cmd, const VkDependencyInfo *dependencies);
+void harmony_vk_pipeline_barrier(VkCommandBuffer cmd, const VkDependencyInfo *dependencies);
 
 /**
  * Begins a dynamic rendering pass
  *
  * Parameters
- * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer, must not be VK_NULL_HANDLE
  * - info The rendering info, must not be NULL
  */
-void harmony_vk_begin_rendering(VkDevice device, VkCommandBuffer cmd, const VkRenderingInfo *info);
+void harmony_vk_begin_rendering(VkCommandBuffer cmd, const VkRenderingInfo *info);
 
 /**
  * Ends a dynamic rendering pass
  *
  * Parameters
- * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer, must not be VK_NULL_HANDLE
  */
-void harmony_vk_end_rendering(VkDevice device, VkCommandBuffer cmd);
+void harmony_vk_end_rendering(VkCommandBuffer cmd);
 
 /**
  * Sets the viewport dynamically
  *
  * Parameters
- * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer to write the command to, must not be VK_NULL_HANDLE
  * - x Left coordinate of viewport
  * - y Top coordinate of viewport
@@ -1349,7 +1355,6 @@ void harmony_vk_end_rendering(VkDevice device, VkCommandBuffer cmd);
  * - far Maximum depth value
  */
 void harmony_vk_set_viewport(
-    VkDevice device,
     VkCommandBuffer cmd,
     float x,
     float y,
@@ -1362,26 +1367,23 @@ void harmony_vk_set_viewport(
  * Sets the scissor rectangle dynamically
  *
  * Parameters
- * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer to write to, must not be VK_NULL_HANDLE
  * - x Left coordinate of scissor
  * - y Top coordinate of scissor
  * - width Width of scissor
  * - height Height of scissor
  */
-void harmony_vk_set_scissor(VkDevice device, VkCommandBuffer cmd, i32 x, i32 y, u32 width, u32 height);
+void harmony_vk_set_scissor(VkCommandBuffer cmd, i32 x, i32 y, u32 width, u32 height);
 
 /**
  * Binds a pipeline to a command buffer
  *
  * Parameters
- * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer to bind to, must not be VK_NULL_HANDLE
  * - pipeline The Vulkan pipeline to bind, must not be VK_NULL_HANDLE
  * - bind_point Graphics or compute bind point
  */
 void harmony_vk_bind_pipeline(
-    VkDevice device,
     VkCommandBuffer cmd,
     VkPipeline pipeline,
     VkPipelineBindPoint bind_point
@@ -1391,7 +1393,6 @@ void harmony_vk_bind_pipeline(
  * Binds descriptor sets to a pipeline
  *
  * Parameters
- * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer, must not be VK_NULL_HANDLE
  * - layout The pipeline layout, must not be VK_NULL_HANDLE
  * - bind_point Graphics or compute bind point
@@ -1400,7 +1401,6 @@ void harmony_vk_bind_pipeline(
  * - descriptor_sets The descriptor sets to bind, must not be NULL
  */
 void harmony_vk_bind_descriptor_sets(
-    VkDevice device,
     VkCommandBuffer cmd,
     VkPipelineLayout layout,
     VkPipelineBindPoint bind_point,
@@ -1412,7 +1412,6 @@ void harmony_vk_bind_descriptor_sets(
  * Pushes constant values into the command buffer
  *
  * Parameters
- * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer, must not be VK_NULL_HANDLE
  * - layout The pipeline layout, must not be VK_NULL_HANDLE
  * - stages Shader stages to update
@@ -1421,7 +1420,6 @@ void harmony_vk_bind_descriptor_sets(
  * - data Pointer to constant data, must not be NULL
  */
 void harmony_vk_push_constants(
-    VkDevice device,
     VkCommandBuffer cmd,
     VkPipelineLayout layout,
     VkShaderStageFlags stages,
@@ -1433,7 +1431,6 @@ void harmony_vk_push_constants(
  * Binds multiple vertex buffers
  *
  * Parameters
- * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer, must not be VK_NULL_HANDLE
  * - begin_index First binding index
  * - count Number of vertex buffers, must be greater than 0
@@ -1441,7 +1438,6 @@ void harmony_vk_push_constants(
  * - offsets Byte offsets for each buffer, must not be NULL
  */
 void harmony_vk_bind_vertex_buffers(
-    VkDevice device,
     VkCommandBuffer cmd,
     u32 begin_index,
     u32 count,
@@ -1452,24 +1448,21 @@ void harmony_vk_bind_vertex_buffers(
  * Binds a single vertex buffer
  *
  * Parameters
- * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer, must not be VK_NULL_HANDLE
  * - vertex_buffer The vertex buffer to bind, must not be VK_NULL_HANDLE
  */
-void harmony_vk_bind_vertex_buffer(VkDevice device, VkCommandBuffer cmd, VkBuffer vertex_buffer);
+void harmony_vk_bind_vertex_buffer(VkCommandBuffer cmd, VkBuffer vertex_buffer);
 
 /**
  * Binds an index buffer for indexed drawing
  *
  * Parameters
- * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer, must not be VK_NULL_HANDLE
  * - index_buffer The buffer containing indices, must not be VK_NULL_HANDLE
  * - offset Byte offset into the index buffer
  * - type The index type
  */
 void harmony_vk_bind_index_buffer(
-    VkDevice device,
     VkCommandBuffer cmd,
     VkBuffer index_buffer,
     usize offset,
@@ -1479,7 +1472,6 @@ void harmony_vk_bind_index_buffer(
  * Draws the vertices to the framebuffer
  *
  * Parameters
- * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer to write, must not be VK_NULL_HANDLE
  * - first_vertex The beginning vertex in the vertex buffer to use
  * - vertex_count The number of vertices to read, must be greater than 0
@@ -1487,7 +1479,6 @@ void harmony_vk_bind_index_buffer(
  * - instance_count The number of instances to draw, must be greater than 0
  */
 void harmony_vk_draw(
-    VkDevice device,
     VkCommandBuffer cmd,
     u32 first_vertex,
     u32 vertex_count,
@@ -1498,7 +1489,6 @@ void harmony_vk_draw(
  * Draws the vertices to the framebuffer, using an index buffer
  *
  * Parameters
- * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer to write, must not be VK_NULL_HANDLE
  * - vertex_offset The offset into the vertices
  * - first_index The beginning index in the index buffer to use
@@ -1507,7 +1497,6 @@ void harmony_vk_draw(
  * - instance_count The number of instances to draw, must be greater than 0
  */
 void harmony_vk_draw_indexed(
-    VkDevice device,
     VkCommandBuffer cmd,
     u32 vertex_offset,
     u32 first_index,
@@ -1519,13 +1508,12 @@ void harmony_vk_draw_indexed(
  * Dispatches the bound compute shader
  *
  * Parameters
- * - device The Vulkan device, must not be VK_NULL_HANDLE
  * - cmd The command buffer to write, must not be VK_NULL_HANDLE
  * - x The number of local workgroups in the x direction
  * - y The number of local workgroups in the x direction
  * - z The number of local workgroups in the x direction
  */
-void harmony_vk_dispatch(VkDevice device, VkCommandBuffer cmd, u32 x, u32 y, u32 z);
+void harmony_vk_dispatch(VkCommandBuffer cmd, u32 x, u32 y, u32 z);
 
 #if defined(HARMONY_IMPLEMENTATION_GRAPHICS) || defined(HARMONY_IMPLEMENTATION_ALL)
 
@@ -1562,14 +1550,14 @@ struct HarmonyPlatform {
 
 #define HARMONY_LOAD_X11_FUNC(name) *(void **)&platform->pfn. name \
     = harmony_dynamic_lib_load_symbol(platform->lib, #name); \
-    if (platform->pfn. name == NULL) { harmony_error("Could not load Xlib function: " #name) }
+    if (platform->pfn. name == NULL) { harmony_error("Could not load Xlib function: \n" #name) }
 
 HarmonyPlatform *harmony_platform_create(void) {
     HarmonyPlatform *platform = malloc(sizeof(*platform));
 
     platform->lib = harmony_dynamic_lib_open("libX11.so.6");
     if (platform->lib == NULL)
-        harmony_error("Could not open Xlib");
+        harmony_error("Could not open Xlib\n");
 
     HARMONY_LOAD_X11_FUNC(XOpenDisplay);
     HARMONY_LOAD_X11_FUNC(XCloseDisplay);
@@ -1587,7 +1575,7 @@ HarmonyPlatform *harmony_platform_create(void) {
 
     platform->display = platform->pfn.XOpenDisplay(NULL);
     if (platform->display == NULL)
-        harmony_error("Could not open X display");
+        harmony_error("Could not open X display\n");
 
     return platform;
 }
@@ -1632,15 +1620,15 @@ static Window harmony_create_x11_window(
         &window_attributes
     );
     if (window == ~0U)
-        harmony_error("X11 could not create window");
+        harmony_error("X11 could not create window\n");
 
     int name_result = platform->pfn.XStoreName(display, window, title);
     if (name_result == 0)
-        harmony_error("X11 could not set window title");
+        harmony_error("X11 could not set window title\n");
 
     int map_result = platform->pfn.XMapWindow(display, window);
     if (map_result == 0)
-        harmony_error("X11 could not map window");
+        harmony_error("X11 could not map window\n");
 
     return window;
 }
@@ -1652,7 +1640,7 @@ static Atom harmony_set_delete_behavior(
 ) {
     Atom delete_atom = platform->pfn.XInternAtom(display, "WM_DELETE_WINDOW", False);
     if (delete_atom == None)
-        harmony_error("X11 could not get WM_DELETE_WINDOW atom");
+        harmony_error("X11 could not get WM_DELETE_WINDOW atom\n");
 
     int set_protocols_result = platform->pfn.XSetWMProtocols(
         display,
@@ -1661,7 +1649,7 @@ static Atom harmony_set_delete_behavior(
         1
     );
     if (set_protocols_result == 0)
-        harmony_error("X11 could not set WM_DELETE_WINDOW protocol");
+        harmony_error("X11 could not set WM_DELETE_WINDOW protocol\n");
 
     return delete_atom;
 }
@@ -1673,11 +1661,11 @@ static void harmony_set_fullscreen(
 ) {
     Atom state_atom = platform->pfn.XInternAtom(display, "_NET_WM_STATE", False);
     if (state_atom == None)
-        harmony_error("X11 failed to get state atom");
+        harmony_error("X11 failed to get state atom\n");
 
     Atom fullscreen_atom = platform->pfn.XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", False);
     if (fullscreen_atom == None)
-        harmony_error("X11 failed to get fullscreen atom");
+        harmony_error("X11 failed to get fullscreen atom\n");
 
     int fullscreen_result = platform->pfn.XSendEvent(
         display,
@@ -1699,7 +1687,7 @@ static void harmony_set_fullscreen(
         }}
     );
     if (fullscreen_result == 0)
-        harmony_error("X11 could not send fullscreen message");
+        harmony_error("X11 could not send fullscreen message\n");
 }
 
 HarmonyWindow harmony_window_create(
@@ -1725,7 +1713,7 @@ HarmonyWindow harmony_window_create(
 
     int flush_result = platform->pfn.XFlush(platform->display);
     if (flush_result == 0)
-        harmony_error("X11 could not flush window");
+        harmony_error("X11 could not flush window\n");
 
     return (HarmonyWindow){
         .platform_internals = x11_window,
@@ -1748,7 +1736,7 @@ void harmony_window_process_events(const HarmonyPlatform *platform, HarmonyWindo
     harmony_assert(window_count > 0);
 
     if (window_count > 1)
-        harmony_error("Multiple windows unsupported"); // : TODO
+        harmony_error("Multiple windows unsupported\n"); // : TODO
     HarmonyWindow* window = windows[0];
 
     memset(window->keys_pressed, 0, sizeof(window->keys_pressed));
@@ -1764,7 +1752,7 @@ void harmony_window_process_events(const HarmonyPlatform *platform, HarmonyWindo
         XEvent event;
         int event_result = platform->pfn.XNextEvent(platform->display, &event);
         if (event_result != 0)
-            harmony_error("X11 could not get next event");
+            harmony_error("X11 could not get next event\n");
 
         switch (event.type) {
             case ConfigureNotify: {
@@ -2183,8 +2171,6 @@ typedef struct HarmonyVulkanFuncs {
     HARMONY_MAKE_VULKAN_FUNC(vkGetInstanceProcAddr)
     HARMONY_MAKE_VULKAN_FUNC(vkGetDeviceProcAddr)
 
-    HARMONY_MAKE_VULKAN_FUNC(vkEnumerateInstanceExtensionProperties)
-    HARMONY_MAKE_VULKAN_FUNC(vkEnumerateInstanceLayerProperties)
     HARMONY_MAKE_VULKAN_FUNC(vkCreateInstance)
     HARMONY_MAKE_VULKAN_FUNC(vkDestroyInstance)
 
@@ -2299,19 +2285,17 @@ static HarmonyVulkanFuncs harmony_vk_pfn;
 #define HARMONY_LOAD_VULKAN_FUNC(name) \
     harmony_vk_pfn. name = (PFN_##name)harmony_vk_pfn.vkGetInstanceProcAddr(NULL, #name); \
     if (harmony_vk_pfn. name == NULL) { \
-        harmony_error("Could not load " #name); \
+        harmony_error("Could not load " #name "\n"); \
     }
 
 static void harmony_load_vulkan(void) {
     harmony_libvulkan = harmony_dynamic_lib_open("libvulkan.so.1");
     if (harmony_libvulkan == NULL)
-        harmony_error("Could not load vulkan");
+        harmony_error("Could not load vulkan\n");
 
     *(void **)&harmony_vk_pfn.vkGetInstanceProcAddr
         = harmony_dynamic_lib_load_symbol(harmony_libvulkan, "vkGetInstanceProcAddr");
 
-    HARMONY_LOAD_VULKAN_FUNC(vkEnumerateInstanceExtensionProperties);
-    HARMONY_LOAD_VULKAN_FUNC(vkEnumerateInstanceLayerProperties);
     HARMONY_LOAD_VULKAN_FUNC(vkCreateInstance);
 }
 
@@ -2319,7 +2303,7 @@ static void harmony_load_vulkan(void) {
 
 #define HARMONY_LOAD_VULKAN_INSTANCE_FUNC(instance, name) \
     harmony_vk_pfn. name = (PFN_##name)harmony_vk_pfn.vkGetInstanceProcAddr(instance, #name); \
-    if (harmony_vk_pfn. name == NULL) { harmony_error("Could not load " #name); }
+    if (harmony_vk_pfn. name == NULL) { harmony_error("Could not load " #name "\n"); }
 
 static void harmony_load_vulkan_instance(VkInstance instance) {
     HARMONY_LOAD_VULKAN_INSTANCE_FUNC(instance, vkGetDeviceProcAddr);
@@ -2344,7 +2328,7 @@ static void harmony_load_vulkan_instance(VkInstance instance) {
 
 #define HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, name) \
     harmony_vk_pfn. name = (PFN_##name)harmony_vk_pfn.vkGetDeviceProcAddr(device, #name); \
-    if (harmony_vk_pfn. name == NULL) { harmony_error("Could not load " #name); }
+    if (harmony_vk_pfn. name == NULL) { harmony_error("Could not load " #name "\n"); }
 
 static void harmony_load_vulkan_device(VkDevice device) {
     HARMONY_LOAD_VULKAN_DEVICE_FUNC(device, vkDestroyDevice)
@@ -2440,114 +2424,6 @@ static const char* const harmony_vk_device_extensions[] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 };
 
-static void harmony_check_instance_extensions(
-    const char **exts,
-    u32 ext_count
-) {
-    if (ext_count > 0) {
-        harmony_assert(exts != NULL);
-    } else {
-        return;
-    }
-
-    u32 ext_prop_count = 0;
-    VkResult ext_count_res = harmony_vk_pfn.vkEnumerateInstanceExtensionProperties(
-        NULL, &ext_prop_count, NULL);
-    switch (ext_count_res) {
-        case VK_SUCCESS: break;
-        case VK_INCOMPLETE: {
-            harmony_log_warning("Vulkan incomplete instance extension enumeration");
-            break;
-        }
-        case VK_ERROR_LAYER_NOT_PRESENT: harmony_error("Vulkan layer not present");
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        default: harmony_error("Unexpected Vulkan error");
-    }
-
-    VkExtensionProperties* ext_props = malloc(
-        ext_prop_count * sizeof(*ext_props));
-
-    VkResult ext_res = harmony_vk_pfn.vkEnumerateInstanceExtensionProperties(
-        NULL, &ext_prop_count, ext_props);
-    switch (ext_res) {
-        case VK_SUCCESS: break;
-        case VK_INCOMPLETE: {
-            harmony_log_warning("Vulkan incomplete instance extension enumeration");
-            break;
-        }
-        case VK_ERROR_LAYER_NOT_PRESENT: harmony_error("Vulkan layer not present");
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        default: harmony_error("Unexpected Vulkan error");
-    }
-
-    for (usize i = 0; i < ext_count; ++i) {
-        for (usize j = 0; j < ext_prop_count; ++j) {
-            if (strcmp(exts[i], ext_props[j].extensionName) == 0)
-                goto next_ext;
-        }
-        harmony_error("Could not find Vulkan instance extension: %s", exts[i]);
-next_ext:
-        continue;
-    }
-
-    free(ext_props);
-}
-
-#ifndef NDEBUG
-static void harmony_check_instance_layers(
-    const char **layers,
-    u32 layer_count
-) {
-    if (layer_count > 0) {
-        harmony_assert(layers != NULL);
-    } else {
-        return;
-    }
-
-    u32 prop_count = 0;
-    VkResult count_result = harmony_vk_pfn.vkEnumerateInstanceLayerProperties(&prop_count, NULL);
-    switch (count_result) {
-        case VK_SUCCESS: break;
-        case VK_INCOMPLETE: {
-            harmony_log_warning("Vulkan incomplete instance layer enumeration");
-            break;
-        }
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
-        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error");
-        default: harmony_error("Unexpected Vulkan error");
-    }
-
-    VkLayerProperties* layer_props = malloc(prop_count * sizeof(*layer_props));
-    VkResult props_result = harmony_vk_pfn.vkEnumerateInstanceLayerProperties(&prop_count, layer_props);
-    switch (props_result) {
-        case VK_SUCCESS: break;
-        case VK_INCOMPLETE: {
-            harmony_log_warning("Vulkan incomplete instance layer enumeration");
-            break;
-        }
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
-        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error");
-        default: harmony_error("Unexpected Vulkan error");
-    }
-
-    for (usize i = 0; i < layer_count; ++i) {
-        for (usize j = 0; j < prop_count; ++j) {
-            if (strcmp(layers[i], layer_props[j].layerName) == 0)
-                goto next_layer;
-        }
-        harmony_error("Could not find Vulkan instance: %s", layers[i]);
-next_layer:
-        continue;
-    }
-}
-#endif
-
 static VkBool32 harmony_debug_callback(
     const VkDebugUtilsMessageSeverityFlagBitsEXT severity,
     const VkDebugUtilsMessageTypeFlagsEXT type,
@@ -2597,7 +2473,6 @@ VkInstance harmony_vk_create_instance(void) {
     const char* layers[] = {
         "VK_LAYER_KHRONOS_validation",
     };
-    harmony_check_instance_layers(layers, harmony_countof(layers));
 #endif // NDEBUG
 
     const char* exts[] = {
@@ -2611,7 +2486,6 @@ VkInstance harmony_vk_create_instance(void) {
 #error "unsupported platform, supported platforms: linux"
 #endif // __linux__
     };
-    harmony_check_instance_extensions(exts, harmony_countof(exts));
 
     VkInstanceCreateInfo instance_info = {
         .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
@@ -2631,13 +2505,13 @@ VkInstance harmony_vk_create_instance(void) {
     VkResult result = harmony_vk_pfn.vkCreateInstance(&instance_info, NULL, &instance);
     switch (result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_LAYER_NOT_PRESENT: harmony_error("Required Vulkan layer not present");
-        case VK_ERROR_EXTENSION_NOT_PRESENT: harmony_error("Required Vulkan extension not present");
-        case VK_ERROR_INCOMPATIBLE_DRIVER: harmony_error("Incompatible Vulkan driver");
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_INITIALIZATION_FAILED: harmony_error("Vulkan initialization failed");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_LAYER_NOT_PRESENT: harmony_error("Required Vulkan layer not present\n");
+        case VK_ERROR_EXTENSION_NOT_PRESENT: harmony_error("Required Vulkan extension not present\n");
+        case VK_ERROR_INCOMPATIBLE_DRIVER: harmony_error("Incompatible Vulkan driver\n");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_INITIALIZATION_FAILED: harmony_error("Vulkan initialization failed\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
     harmony_load_vulkan_instance(instance);
@@ -2657,8 +2531,8 @@ VkDebugUtilsMessengerEXT harmony_vk_create_debug_messenger(VkInstance instance) 
         instance, &harmony_debug_utils_messenger_create_info, NULL, &messenger);
     switch (result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
     return messenger;
@@ -2678,18 +2552,18 @@ VkPhysicalDevice harmony_vk_find_physical_device(VkInstance instance) {
     switch (gpu_count_res) {
         case VK_SUCCESS: break;
         case VK_INCOMPLETE: {
-            harmony_log_warning("Vulkan incomplete gpu enumeration");
+            harmony_log_warning("Vulkan incomplete gpu enumeration\n");
             break;
         }
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_INITIALIZATION_FAILED: harmony_error("Vulkan initialization failed");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_INITIALIZATION_FAILED: harmony_error("Vulkan initialization failed\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
 #define HARMONY_MAX_GPUS 8
     if (gpu_count > HARMONY_MAX_GPUS)
-        harmony_error("Too many Vulkan physical devices");
+        harmony_error("Too many Vulkan physical devices\n");
     VkPhysicalDevice gpus[HARMONY_MAX_GPUS];
 #undef HARMONY_MAX_GPUS
 
@@ -2697,13 +2571,13 @@ VkPhysicalDevice harmony_vk_find_physical_device(VkInstance instance) {
     switch (gpu_result) {
         case VK_SUCCESS: break;
         case VK_INCOMPLETE: {
-            harmony_log_warning("Vulkan incomplete gpu enumeration");
+            harmony_log_warning("Vulkan incomplete gpu enumeration\n");
             break;
         }
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_INITIALIZATION_FAILED: harmony_error("Vulkan initialization failed");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_INITIALIZATION_FAILED: harmony_error("Vulkan initialization failed\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
     u32 ext_prop_count = 0;
@@ -2719,9 +2593,9 @@ VkPhysicalDevice harmony_vk_find_physical_device(VkInstance instance) {
             case VK_SUCCESS: break;
             case VK_INCOMPLETE: continue;
             case VK_ERROR_LAYER_NOT_PRESENT: continue;
-            case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-            case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-            default: harmony_error("Unexpected Vulkan error");
+            case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+            case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+            default: harmony_error("Unexpected Vulkan error\n");
         }
 
         if (new_prop_count > ext_prop_count) {
@@ -2733,16 +2607,16 @@ VkPhysicalDevice harmony_vk_find_physical_device(VkInstance instance) {
         switch (ext_res) {
             case VK_SUCCESS: break;
             case VK_INCOMPLETE: {
-                harmony_log_warning("Vulkan incomplete gpu extension enumeration");
+                harmony_log_warning("Vulkan incomplete gpu extension enumeration\n");
                 continue;
             }
             case VK_ERROR_LAYER_NOT_PRESENT: {
-                harmony_log_warning("Vulkan layer not present");
+                harmony_log_warning("Vulkan layer not present\n");
                 continue;
             }
-            case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-            case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-            default: harmony_error("Unexpected Vulkan error");
+            case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+            case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+            default: harmony_error("Unexpected Vulkan error\n");
         }
 
         for (usize j = 0; j < harmony_countof(harmony_vk_device_extensions); j++) {
@@ -2760,7 +2634,7 @@ next_ext:
 
 #define HARMONY_MAX_QUEUE_FAMILIES 32
         if (queue_family_count > HARMONY_MAX_QUEUE_FAMILIES)
-            harmony_error("Too many Vulkan queue families");
+            harmony_error("Too many Vulkan queue families\n");
         VkQueueFamilyProperties queue_families[HARMONY_MAX_QUEUE_FAMILIES];
 #undef HARMONY_MAX_QUEUE_FAMILIES
 
@@ -2781,7 +2655,7 @@ next_gpu:
         continue;
     }
     if (suitable_gpu == VK_NULL_HANDLE)
-        harmony_error("Could not find suitable gpu");
+        harmony_error("Could not find suitable gpu\n");
 
     free(ext_props);
     return suitable_gpu;
@@ -2823,14 +2697,14 @@ VkDevice harmony_vk_create_single_queue_device(VkPhysicalDevice gpu, u32 queue_f
     VkResult result = harmony_vk_pfn.vkCreateDevice(gpu, &device_info, NULL, &device);
     switch (result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_EXTENSION_NOT_PRESENT: harmony_error("Required Vulkan extension not present");
-        case VK_ERROR_FEATURE_NOT_PRESENT: harmony_error("Required Vulkan feature not present");
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_INITIALIZATION_FAILED: harmony_error("Vulkan initialization failed");
-        case VK_ERROR_TOO_MANY_OBJECTS: harmony_error("Vulkan too many objects");
-        case VK_ERROR_DEVICE_LOST: harmony_error("Vulkan device lost");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_EXTENSION_NOT_PRESENT: harmony_error("Required Vulkan extension not present\n");
+        case VK_ERROR_FEATURE_NOT_PRESENT: harmony_error("Required Vulkan feature not present\n");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_INITIALIZATION_FAILED: harmony_error("Vulkan initialization failed\n");
+        case VK_ERROR_TOO_MANY_OBJECTS: harmony_error("Vulkan too many objects\n");
+        case VK_ERROR_DEVICE_LOST: harmony_error("Vulkan device lost\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
     harmony_load_vulkan_device(device);
@@ -2848,12 +2722,13 @@ void harmony_vk_wait_for_device(VkDevice device) {
 
     VkResult result = harmony_vk_pfn.vkDeviceWaitIdle(device);
     switch (result) {
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_DEVICE_LOST: harmony_error("Vulkan device lost");
-        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
-        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_SUCCESS: break;
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_DEVICE_LOST: harmony_error("Vulkan device lost\n");
+        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed\n");
+        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 }
 
@@ -2874,7 +2749,7 @@ VkSurfaceKHR harmony_vk_create_surface(
         = (PFN_vkCreateXlibSurfaceKHR)harmony_vk_pfn.vkGetInstanceProcAddr(
             instance, "vkCreateXlibSurfaceKHR");
     if (pfn_vkCreateXlibSurfaceKHR == NULL)
-        harmony_error("Could not load vkCreateXlibSurfaceKHR");
+        harmony_error("Could not load vkCreateXlibSurfaceKHR\n");
 
     VkResult surface_result = pfn_vkCreateXlibSurfaceKHR(
         instance,
@@ -2888,11 +2763,11 @@ VkSurfaceKHR harmony_vk_create_surface(
     );
     switch (surface_result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
-        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed\n");
+        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
 #else
@@ -2928,18 +2803,18 @@ static VkPresentModeKHR harmony_vk_find_swapchain_present_mode(
     switch (count_res) {
         case VK_SUCCESS: break;
         case VK_INCOMPLETE: {
-            harmony_log_warning("Vulkan get present modes incomplete");
+            harmony_log_warning("Vulkan get present modes incomplete\n");
             break;
         }
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_SURFACE_LOST_KHR: harmony_error("Vulkan surface lost");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_SURFACE_LOST_KHR: harmony_error("Vulkan surface lost\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
 #define HARMONY_MAX_PRESENT_MODES 8
     if (mode_count > HARMONY_MAX_PRESENT_MODES)
-        harmony_error("too many present modes");
+        harmony_error("too many present modes\n");
     VkPresentModeKHR present_modes[HARMONY_MAX_PRESENT_MODES];
 #undef HARMONY_MAX_PRESENT_MODES
 
@@ -2948,13 +2823,13 @@ static VkPresentModeKHR harmony_vk_find_swapchain_present_mode(
     switch (present_res) {
         case VK_SUCCESS: break;
         case VK_INCOMPLETE: {
-            harmony_log_warning("Vulkan get present modes incomplete");
+            harmony_log_warning("Vulkan get present modes incomplete\n");
             break;
         }
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_SURFACE_LOST_KHR: harmony_error("Vulkan surface lost");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_SURFACE_LOST_KHR: harmony_error("Vulkan surface lost\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
     for (usize i = 0; i < mode_count; ++i) {
@@ -2974,22 +2849,22 @@ static VkFormat harmony_vk_find_swapchain_format(VkPhysicalDevice gpu, VkSurface
     switch (formats_count_res) {
         case VK_SUCCESS: break;
         case VK_INCOMPLETE: {
-            harmony_log_warning("Vulkan get swapchain formats incomplete");
+            harmony_log_warning("Vulkan get swapchain formats incomplete\n");
             break;
         }
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_SURFACE_LOST_KHR: harmony_error("Vulkan surface lost");
-        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error");
-        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_SURFACE_LOST_KHR: harmony_error("Vulkan surface lost\n");
+        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error\n");
+        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
     if (format_count == 0)
-        harmony_error("No swapchain formats available");
+        harmony_error("No swapchain formats available\n");
 
 #define HARMONY_MAX_FORMATS 64
     if (format_count > 64)
-        harmony_error("Too many Vulkan swapchain formats");
+        harmony_error("Too many Vulkan swapchain formats\n");
     VkSurfaceFormatKHR formats[HARMONY_MAX_FORMATS];
 #undef HARMONY_MAX_FORMATS
 
@@ -3002,15 +2877,15 @@ static VkFormat harmony_vk_find_swapchain_format(VkPhysicalDevice gpu, VkSurface
     switch (format_result) {
         case VK_SUCCESS: break;
         case VK_INCOMPLETE: {
-            harmony_log_warning("Vulkan get swapchain formats incomplete");
+            harmony_log_warning("Vulkan get swapchain formats incomplete\n");
             break;
         }
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_SURFACE_LOST_KHR: harmony_error("Vulkan surface lost");
-        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error");
-        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_SURFACE_LOST_KHR: harmony_error("Vulkan surface lost\n");
+        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error\n");
+        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
     for (usize i = 0; i < format_count; ++i) {
@@ -3019,7 +2894,7 @@ static VkFormat harmony_vk_find_swapchain_format(VkPhysicalDevice gpu, VkSurface
         if (formats[i].format == VK_FORMAT_B8G8R8A8_SRGB)
             return VK_FORMAT_B8G8R8A8_SRGB;
     }
-    harmony_error("No supported swapchain formats");
+    harmony_error("No supported swapchain formats\n");
 }
 
 VkSwapchainKHR harmony_vk_create_swapchain(
@@ -3049,10 +2924,10 @@ VkSwapchainKHR harmony_vk_create_swapchain(
         gpu, surface, &surface_capabilities);
     switch (surface_result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_SURFACE_LOST_KHR: harmony_error("Vulkan surface lost");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_SURFACE_LOST_KHR: harmony_error("Vulkan surface lost\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
     if (surface_capabilities.currentExtent.width == 0 || surface_capabilities.currentExtent.height == 0)
         return VK_NULL_HANDLE;
@@ -3076,7 +2951,7 @@ VkSwapchainKHR harmony_vk_create_swapchain(
         .imageColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR,
         .imageExtent = surface_capabilities.currentExtent,
         .imageArrayLayers = 1,
-        .imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        .imageUsage = image_usage,
         .preTransform = surface_capabilities.currentTransform,
         .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         .presentMode = present_mode,
@@ -3093,14 +2968,14 @@ VkSwapchainKHR harmony_vk_create_swapchain(
     );
     switch (swapchain_result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_DEVICE_LOST: harmony_error("Vulkan device lost");
-        case VK_ERROR_SURFACE_LOST_KHR: harmony_error("Vulkan surface lost");
-        case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR: harmony_error("Vulkan native window in use");
-        case VK_ERROR_INITIALIZATION_FAILED: harmony_error("Vulkan initialization failed");
-        case VK_ERROR_COMPRESSION_EXHAUSTED_EXT: harmony_error("Vulkan compression exhausted");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_DEVICE_LOST: harmony_error("Vulkan device lost\n");
+        case VK_ERROR_SURFACE_LOST_KHR: harmony_error("Vulkan surface lost\n");
+        case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR: harmony_error("Vulkan native window in use\n");
+        case VK_ERROR_INITIALIZATION_FAILED: harmony_error("Vulkan initialization failed\n");
+        case VK_ERROR_COMPRESSION_EXHAUSTED_EXT: harmony_error("Vulkan compression exhausted\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
     return new_swapchain;
@@ -3126,12 +3001,12 @@ u32 harmony_vk_get_swapchain_image_count(VkDevice device, VkSwapchainKHR swapcha
     switch (result) {
         case VK_SUCCESS: break;
         case VK_INCOMPLETE: {
-            harmony_log_warning("Vulkan get swapchain images incomplete");
+            harmony_log_warning("Vulkan get swapchain images incomplete\n");
             break;
         }
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
     return image_count;
@@ -3147,51 +3022,52 @@ void harmony_vk_get_swapchain_images(VkDevice device, VkSwapchainKHR swapchain, 
     switch (image_result) {
         case VK_SUCCESS: break;
         case VK_INCOMPLETE: {
-            harmony_log_warning("Vulkan get swapchain images incomplete");
+            harmony_log_warning("Vulkan get swapchain images incomplete\n");
             break;
         }
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 }
 
-u32 harmony_vk_acquire_next_image(
+bool harmony_vk_acquire_next_image(
     VkDevice device,
     VkSwapchainKHR swapchain,
+    u32 *image_index,
     VkSemaphore signal_semaphore,
     VkFence signal_fence
 ) {
     harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(swapchain != VK_NULL_HANDLE);
+    harmony_debug_mode(*image_index = UINT32_MAX);
 
-    u32 next_image;
     const VkResult acquire_result = harmony_vk_pfn.vkAcquireNextImageKHR(
         device,
         swapchain,
         UINT64_MAX,
         signal_semaphore,
         signal_fence,
-        &next_image
+        image_index
     );
     switch (acquire_result) {
         case VK_SUCCESS: break;
         case VK_SUBOPTIMAL_KHR:
-            harmony_log_warning("Suboptimal KHR");
-            break;
+            harmony_log_warning("Vulkan swapchain suboptimal for image acquisition\n");
+            return false;
         case VK_ERROR_OUT_OF_DATE_KHR:
-            harmony_log_warning("Out of date KHR");
-            break;
-        case VK_TIMEOUT: harmony_error("Vulkan timed out waiting for image");
-        case VK_NOT_READY: harmony_error("Vulkan not ready waiting for image");
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_DEVICE_LOST: harmony_error("Vulkan device lost");
-        case VK_ERROR_SURFACE_LOST_KHR: harmony_error("Vulkan surface lost");
-        default: harmony_error("Unexpected Vulkan error");
+            harmony_log_warning("Vulkan swapchain out of date for image acquisition\n");
+            return false;
+        case VK_TIMEOUT: harmony_error("Vulkan timed out waiting for image\n");
+        case VK_NOT_READY: harmony_error("Vulkan not ready waiting for image\n");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_DEVICE_LOST: harmony_error("Vulkan device lost\n");
+        case VK_ERROR_SURFACE_LOST_KHR: harmony_error("Vulkan surface lost\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
-    return next_image;
+    return true;
 }
 
 void harmony_vk_present(
@@ -3218,18 +3094,18 @@ void harmony_vk_present(
     switch (present_result) {
         case VK_SUCCESS: break;
         case VK_SUBOPTIMAL_KHR: {
-            harmony_log_warning("Suboptimal KHR");
+            harmony_log_warning("Vulkan swapchain suboptimal for presentation\n");
             break;
         }
         case VK_ERROR_OUT_OF_DATE_KHR: {
-            harmony_log_warning("Out of date KHR");
+            harmony_log_warning("Vulkan swapchain out of date for presentation\n");
             break;
         }
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_DEVICE_LOST: harmony_error("Vulkan device lost");
-        case VK_ERROR_SURFACE_LOST_KHR: harmony_error("Vulkan surface lost");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_DEVICE_LOST: harmony_error("Vulkan device lost\n");
+        case VK_ERROR_SURFACE_LOST_KHR: harmony_error("Vulkan surface lost\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 }
 
@@ -3249,9 +3125,9 @@ VkSemaphore harmony_vk_create_semaphore(VkDevice device, VkSemaphoreCreateFlags 
     );
     switch (result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
     return semaphore;
@@ -3274,9 +3150,9 @@ VkFence harmony_vk_create_fence(VkDevice device, VkFenceCreateFlags flags) {
     const VkResult result = harmony_vk_pfn.vkCreateFence(device, &fence_info, NULL, &fence);
     switch (result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
     return fence;
@@ -3296,14 +3172,14 @@ void harmony_vk_wait_for_fences(VkDevice device, VkFence *fences, u32 count) {
     VkResult result = harmony_vk_pfn.vkWaitForFences(device, count, fences, VK_TRUE, UINT64_MAX);
     switch (result) {
         case VK_SUCCESS: break;
-        case VK_TIMEOUT: harmony_error("Vulkan timed out waiting for fence");
-        case VK_NOT_READY: harmony_error("Vulkan not ready");
-        case VK_SUBOPTIMAL_KHR: harmony_error("Vulkan suboptimal");
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_DEVICE_LOST: harmony_error("Vulkan device lost");
-        case VK_ERROR_SURFACE_LOST_KHR: harmony_error("Vulkan surface lost");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_TIMEOUT: harmony_error("Vulkan timed out waiting for fence\n");
+        case VK_NOT_READY: harmony_error("Vulkan not ready\n");
+        case VK_SUBOPTIMAL_KHR: harmony_error("Vulkan suboptimal\n");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_DEVICE_LOST: harmony_error("Vulkan device lost\n");
+        case VK_ERROR_SURFACE_LOST_KHR: harmony_error("Vulkan surface lost\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 }
 
@@ -3315,10 +3191,10 @@ void harmony_vk_reset_fences(VkDevice device, VkFence *fences, u32 count) {
     VkResult result = harmony_vk_pfn.vkResetFences(device, count, fences);
     switch (result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
-        case VK_ERROR_UNKNOWN: harmony_error("Vulkan error unknown");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed\n");
+        case VK_ERROR_UNKNOWN: harmony_error("Vulkan error unknown\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 }
 
@@ -3330,7 +3206,7 @@ bool harmony_vk_find_queue_family(VkPhysicalDevice gpu, u32 *queue_family, VkQue
 
 #define HARMONY_MAX_QUEUE_FAMILIES 32
     if (queue_family_count > HARMONY_MAX_QUEUE_FAMILIES)
-        harmony_error("Too many queue families");
+        harmony_error("Too many queue families\n");
     VkQueueFamilyProperties queue_families[HARMONY_MAX_QUEUE_FAMILIES];
 #undef HARMONY_MAX_QUEUE_FAMILIES
 
@@ -3353,7 +3229,7 @@ VkQueue harmony_vk_get_queue(VkDevice device, u32 queue_family, u32 queue_index)
     VkQueue queue = VK_NULL_HANDLE;
     harmony_vk_pfn.vkGetDeviceQueue(device, queue_family, queue_index, &queue);
     if (queue == VK_NULL_HANDLE)
-        harmony_error("Vulkan Device queue does not exist");
+        harmony_error("Vulkan Device queue does not exist\n");
 
     return queue;
 }
@@ -3365,14 +3241,14 @@ void harmony_vk_queue_wait(VkDevice device, VkQueue queue) {
     VkResult wait_result = harmony_vk_pfn.vkQueueWaitIdle(queue);
     switch (wait_result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_DEVICE_LOST: harmony_error("Vulkan device lost");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_DEVICE_LOST: harmony_error("Vulkan device lost\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 }
 
-void harmony_vk_queue_submit(VkQueue queue, VkSubmitInfo *submits, u32 submit_count, VkFence fence) {
+void harmony_vk_submit_commands(VkQueue queue, VkSubmitInfo *submits, u32 submit_count, VkFence fence) {
     harmony_assert(queue != VK_NULL_HANDLE);
     harmony_assert(submits != NULL);
     harmony_assert(submit_count > 0);
@@ -3391,10 +3267,10 @@ VkCommandPool harmony_vk_create_command_pool(VkDevice device, u32 queue_family, 
     VkResult result = harmony_vk_pfn.vkCreateCommandPool(device, &info, NULL, &pool);
     switch (result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_INITIALIZATION_FAILED: harmony_error("Vulkan failed to initialize");
-        default: harmony_error("Vulkan failed to create command pool");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_INITIALIZATION_FAILED: harmony_error("Vulkan failed to initialize\n");
+        default: harmony_error("Vulkan failed to create command pool\n");
     }
 
     return pool;
@@ -3424,9 +3300,9 @@ void harmony_vk_allocate_command_buffers(VkDevice device, VkCommandPool pool, Vk
     );
     switch (result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 }
 
@@ -3436,6 +3312,11 @@ void harmony_vk_free_command_buffers(VkDevice device, VkCommandPool pool, VkComm
     harmony_assert(cmds != NULL);
     harmony_assert(count != 0);
     harmony_vk_pfn.vkFreeCommandBuffers(device, pool, count, cmds);
+}
+
+void harmony_vk_reset_command_buffer(VkCommandBuffer cmd, VkCommandBufferResetFlags flags) {
+    harmony_assert(cmd != NULL);
+    harmony_vk_pfn.vkResetCommandBuffer(cmd, flags);
 }
 
 VkDescriptorPool harmony_vk_create_descriptor_pool(
@@ -3461,12 +3342,12 @@ VkDescriptorPool harmony_vk_create_descriptor_pool(
     VkResult result = harmony_vk_pfn.vkCreateDescriptorPool(device, &pool_info, NULL, &pool);
     switch (result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_FRAGMENTATION_EXT: harmony_error("Vulkan fragmentation error");
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
-        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error");
-        default: harmony_error("Vulkan failed to create descriptor pool");
+        case VK_ERROR_FRAGMENTATION_EXT: harmony_error("Vulkan fragmentation error\n");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed\n");
+        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error\n");
+        default: harmony_error("Vulkan failed to create descriptor pool\n");
     }
     return pool;
 }
@@ -3506,16 +3387,16 @@ bool harmony_vk_allocate_descriptor_sets(
     switch (result) {
         case VK_SUCCESS: return true;
         case VK_ERROR_FRAGMENTED_POOL:
-            harmony_log_warning("Vulkan descriptor pool was fragmented");
+            harmony_log_warning("Vulkan descriptor pool was fragmented\n");
             return false;
         case VK_ERROR_OUT_OF_POOL_MEMORY:
-            harmony_log_warning("Vulkan ran out of descriptor pool memory");
+            harmony_log_warning("Vulkan ran out of descriptor pool memory\n");
             return false;
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
-        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed\n");
+        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 }
 
@@ -3537,11 +3418,11 @@ VkDescriptorSetLayout harmony_vk_create_descriptor_set_layout(
     const VkResult result = harmony_vk_pfn.vkCreateDescriptorSetLayout(device, &layout_info, NULL, &layout);
     switch (result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
-        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed\n");
+        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
     return layout;
@@ -3577,11 +3458,11 @@ VkPipelineLayout harmony_vk_create_pipeline_layout(
     const VkResult result = harmony_vk_pfn.vkCreatePipelineLayout(device, &pipeline_layout_info, NULL, &layout);
     switch (result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
-        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed\n");
+        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
     return layout;
@@ -3607,12 +3488,12 @@ VkShaderModule harmony_vk_create_shader_module(VkDevice device, const u8 *code, 
     const VkResult result = harmony_vk_pfn.vkCreateShaderModule(device, &shader_module_info, NULL, &shader_module);
     switch (result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
-        case VK_ERROR_INVALID_SHADER_NV: harmony_error("Vulkan invalid shader");
-        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed\n");
+        case VK_ERROR_INVALID_SHADER_NV: harmony_error("Vulkan invalid shader\n");
+        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
     return shader_module;
@@ -3638,7 +3519,7 @@ VkPipeline harmony_vk_create_graphics_pipeline(VkDevice device, const HarmonyVkP
 
 #define HARMONY_MAX_SHADER_STAGES 8
     if (config->shader_count > HARMONY_MAX_SHADER_STAGES)
-        harmony_error("Too many shader stages for graphics pipeline");
+        harmony_error("Too many shader stages for graphics pipeline\n");
     VkPipelineShaderStageCreateInfo shader_stages[HARMONY_MAX_SHADER_STAGES];
 #undef HARMONY_MAX_SHADER_STAGES
 
@@ -3781,14 +3662,14 @@ VkPipeline harmony_vk_create_graphics_pipeline(VkDevice device, const HarmonyVkP
     switch (result) {
         case VK_SUCCESS: break;
         case VK_PIPELINE_COMPILE_REQUIRED_EXT: {
-            harmony_log_warning("Pipeline requires recompilation");
+            harmony_log_warning("Pipeline requires recompilation\n");
         } break;
-        case VK_ERROR_INVALID_SHADER_NV: harmony_error("Vulkan invalid shader");
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
-        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_INVALID_SHADER_NV: harmony_error("Vulkan invalid shader\n");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed\n");
+        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
     return pipeline;
@@ -3829,14 +3710,14 @@ VkPipeline harmony_vk_create_compute_pipeline(VkDevice device, const HarmonyVkPi
     switch (result) {
         case VK_SUCCESS: break;
         case VK_PIPELINE_COMPILE_REQUIRED_EXT: {
-            harmony_log_warning("Pipeline requires recompilation");
+            harmony_log_warning("Pipeline requires recompilation\n");
         } break;
-        case VK_ERROR_INVALID_SHADER_NV: harmony_error("Vulkan invalid shader");
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
-        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_INVALID_SHADER_NV: harmony_error("Vulkan invalid shader\n");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed\n");
+        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
     return pipeline;
@@ -3862,11 +3743,11 @@ VkBuffer harmony_vk_create_buffer(VkDevice device, usize size, VkBufferUsageFlag
     VkResult result = harmony_vk_pfn.vkCreateBuffer(device, &buffer_info, NULL, &buffer);
     switch (result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_INVALID_EXTERNAL_HANDLE: harmony_error("Vulkan invalid external handle");
-        case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS: harmony_error("Vulkan invalid opaque capture address");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_INVALID_EXTERNAL_HANDLE: harmony_error("Vulkan invalid external handle\n");
+        case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS: harmony_error("Vulkan invalid opaque capture address\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
     return buffer;
@@ -3960,12 +3841,12 @@ VkImage harmony_vk_create_image(VkDevice device, const HarmonyVkImageConfig *con
     VkResult result = harmony_vk_pfn.vkCreateImage(device, &image_info, NULL, &image);
     switch (result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_COMPRESSION_EXHAUSTED_EXT: harmony_error("Vulkan compression exhausted");
-        case VK_ERROR_INVALID_EXTERNAL_HANDLE: harmony_error("Vulkan invalid external handle");
-        case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS: harmony_error("Vulkan invalid opaque capture address");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_COMPRESSION_EXHAUSTED_EXT: harmony_error("Vulkan compression exhausted\n");
+        case VK_ERROR_INVALID_EXTERNAL_HANDLE: harmony_error("Vulkan invalid external handle\n");
+        case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS: harmony_error("Vulkan invalid opaque capture address\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
     return image;
@@ -4006,10 +3887,10 @@ VkImageView harmony_vk_create_image_view(
     VkResult result = harmony_vk_pfn.vkCreateImageView(device, &view_info, NULL, &view);
     switch (result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS: harmony_error("Vulkan invalid opaque capture address");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS: harmony_error("Vulkan invalid opaque capture address\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
     return view;
@@ -4039,10 +3920,10 @@ VkSampler harmony_vk_create_sampler(VkDevice device, VkFilter filter, VkSamplerA
     VkResult sampler_result = harmony_vk_pfn.vkCreateSampler(device, &sampler_info, NULL, &sampler);
     switch (sampler_result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS: harmony_error("Vulkan invalid device address");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS: harmony_error("Vulkan invalid device address\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
     return sampler;
@@ -4095,17 +3976,17 @@ static u32 harmony_vk_find_memory_type_index(
         if ((bitmask & (1 << i))) {
             if ((mem_props.memoryTypes[i].propertyFlags & desired_flags) == 0)
                 continue;
-            harmony_log_warning("Could not find Vulkan memory type without undesired flags");
+            harmony_log_warning("Could not find Vulkan memory type without undesired flags\n");
             return i;
         }
     }
     for (uint32_t i = 0; i < mem_props.memoryTypeCount; ++i) {
         if ((bitmask & (1 << i))) {
-            harmony_log_warning("Could not find Vulkan memory type with desired flags");
+            harmony_log_warning("Could not find Vulkan memory type with desired flags\n");
             return i;
         }
     }
-    harmony_error("Could not find Vulkan memory type");
+    harmony_error("Could not find Vulkan memory type\n");
 }
 
 VkDeviceMemory harmony_vk_allocate_memory(
@@ -4126,13 +4007,13 @@ VkDeviceMemory harmony_vk_allocate_memory(
     VkDeviceMemory memory = VK_NULL_HANDLE;
     VkResult result = harmony_vk_pfn.vkAllocateMemory(device, &alloc_info, NULL, &memory);
     switch (result) {
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_INVALID_EXTERNAL_HANDLE: harmony_error("Vulkan invalid external handle");
-        case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS_KHR: harmony_error("Vulkan invalid opaque capture address");
-        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
-        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_INVALID_EXTERNAL_HANDLE: harmony_error("Vulkan invalid external handle\n");
+        case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS_KHR: harmony_error("Vulkan invalid opaque capture address\n");
+        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed\n");
+        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
     return memory;
@@ -4151,12 +4032,12 @@ void harmony_vk_bind_buffer_memory(VkDevice device, VkBuffer buffer, VkDeviceMem
 
     VkResult result = harmony_vk_pfn.vkBindBufferMemory(device, buffer, memory, offset);
     switch (result) {
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS_KHR: harmony_error("Vulkan invalid opaque capture address");
-        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
-        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS_KHR: harmony_error("Vulkan invalid opaque capture address\n");
+        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed\n");
+        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 }
 
@@ -4167,12 +4048,12 @@ void harmony_vk_bind_image_memory(VkDevice device, VkImage image, VkDeviceMemory
 
     VkResult result = harmony_vk_pfn.vkBindImageMemory(device, image, memory, offset);
     switch (result) {
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS_KHR: harmony_error("Vulkan invalid opaque capture address");
-        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
-        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS_KHR: harmony_error("Vulkan invalid opaque capture address\n");
+        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed\n");
+        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 }
 
@@ -4184,12 +4065,12 @@ void *harmony_vk_map_memory(VkDevice device, VkDeviceMemory memory, usize offset
     void *data;
     VkResult result = harmony_vk_pfn.vkMapMemory(device, memory, offset, size, 0, &data);
     switch (result) {
-        case VK_ERROR_MEMORY_MAP_FAILED: harmony_error("Vulkan memory map failed");
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
-        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_MEMORY_MAP_FAILED: harmony_error("Vulkan memory map failed\n");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed\n");
+        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 
     return data;
@@ -4215,11 +4096,11 @@ void harmony_vk_flush_memory(VkDevice device, VkDeviceMemory memory, usize offse
 
     VkResult result = harmony_vk_pfn.vkFlushMappedMemoryRanges(device, 1, &range);
     switch (result) {
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
-        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed\n");
+        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 }
 
@@ -4237,11 +4118,11 @@ void harmony_vk_invalidate_memory(VkDevice device, VkDeviceMemory memory, usize 
 
     VkResult result = harmony_vk_pfn.vkInvalidateMappedMemoryRanges(device, 1, &range);
     switch (result) {
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed");
-        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_VALIDATION_FAILED: harmony_error("Vulkan validation failed\n");
+        case VK_ERROR_UNKNOWN: harmony_error("Vulkan unknown error\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 }
 
@@ -4256,22 +4137,21 @@ void harmony_vk_begin_cmd(VkDevice device, VkCommandBuffer cmd, VkCommandBufferU
     VkResult result = harmony_vk_pfn.vkBeginCommandBuffer(cmd, &begin_info);
     switch (result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 }
 
-void harmony_vk_end_cmd(VkDevice device, VkCommandBuffer cmd) {
-    harmony_assert(device != VK_NULL_HANDLE);
+void harmony_vk_end_cmd(VkCommandBuffer cmd) {
     harmony_assert(cmd != VK_NULL_HANDLE);
     VkResult result = harmony_vk_pfn.vkEndCommandBuffer(cmd);
     switch (result) {
         case VK_SUCCESS: break;
-        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory");
-        case VK_ERROR_INVALID_VIDEO_STD_PARAMETERS_KHR: harmony_error("Vulkan invalid video parameters");
-        default: harmony_error("Unexpected Vulkan error");
+        case VK_ERROR_OUT_OF_HOST_MEMORY: harmony_error("Vulkan ran out of host memory\n");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY: harmony_error("Vulkan ran out of device memory\n");
+        case VK_ERROR_INVALID_VIDEO_STD_PARAMETERS_KHR: harmony_error("Vulkan invalid video parameters\n");
+        default: harmony_error("Unexpected Vulkan error\n");
     }
 }
 
@@ -4382,28 +4262,24 @@ void harmony_vk_copy_image_to_buffer(
         regions);
 }
 
-void harmony_vk_pipeline_barrier(VkDevice device, VkCommandBuffer cmd, const VkDependencyInfo *dependencies) {
-    harmony_assert(device != VK_NULL_HANDLE);
+void harmony_vk_pipeline_barrier(VkCommandBuffer cmd, const VkDependencyInfo *dependencies) {
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(dependencies != NULL);
     harmony_vk_pfn.vkCmdPipelineBarrier2(cmd, dependencies);
 }
 
-void harmony_vk_begin_rendering(VkDevice device, VkCommandBuffer cmd, const VkRenderingInfo *info) {
-    harmony_assert(device != VK_NULL_HANDLE);
+void harmony_vk_begin_rendering(VkCommandBuffer cmd, const VkRenderingInfo *info) {
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(info != NULL);
     harmony_vk_pfn.vkCmdBeginRendering(cmd, info);
 }
 
-void harmony_vk_end_rendering(VkDevice device, VkCommandBuffer cmd) {
-    harmony_assert(device != VK_NULL_HANDLE);
+void harmony_vk_end_rendering(VkCommandBuffer cmd) {
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_vk_pfn.vkCmdEndRendering(cmd);
 }
 
 void harmony_vk_set_viewport(
-    VkDevice device,
     VkCommandBuffer cmd,
     float x,
     float y,
@@ -4412,33 +4288,28 @@ void harmony_vk_set_viewport(
     float near,
     float far
 ) {
-    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     VkViewport viewport = {x, y, width, height, near, far};
     harmony_vk_pfn.vkCmdSetViewport(cmd, 0, 1, &viewport);
 }
 
-void harmony_vk_set_scissor(VkDevice device, VkCommandBuffer cmd, i32 x, i32 y, u32 width, u32 height) {
-    harmony_assert(device != VK_NULL_HANDLE);
+void harmony_vk_set_scissor(VkCommandBuffer cmd, i32 x, i32 y, u32 width, u32 height) {
     harmony_assert(cmd != VK_NULL_HANDLE);
     VkRect2D scissor = {{x, y}, {width, height}};
     harmony_vk_pfn.vkCmdSetScissor(cmd, 0, 1, &scissor);
 }
 
 void harmony_vk_bind_pipeline(
-    VkDevice device,
     VkCommandBuffer cmd,
     VkPipeline pipeline,
     VkPipelineBindPoint bind_point
 ) {
-    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(pipeline != VK_NULL_HANDLE);
     harmony_vk_pfn.vkCmdBindPipeline(cmd, bind_point, pipeline);
 }
 
 void harmony_vk_bind_descriptor_sets(
-    VkDevice device,
     VkCommandBuffer cmd,
     VkPipelineLayout layout,
     VkPipelineBindPoint bind_point,
@@ -4446,14 +4317,12 @@ void harmony_vk_bind_descriptor_sets(
     u32 set_count,
     const VkDescriptorSet *descriptor_sets
 ) {
-    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(layout != VK_NULL_HANDLE);
     harmony_vk_pfn.vkCmdBindDescriptorSets(cmd, bind_point, layout, begin_index, set_count, descriptor_sets, 0, NULL);
 }
 
 void harmony_vk_push_constants(
-    VkDevice device,
     VkCommandBuffer cmd,
     VkPipelineLayout layout,
     VkShaderStageFlags stages,
@@ -4461,7 +4330,6 @@ void harmony_vk_push_constants(
     u32 size,
     const void *data
 ) {
-    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(layout != VK_NULL_HANDLE);
     harmony_assert(stages != 0);
@@ -4471,7 +4339,6 @@ void harmony_vk_push_constants(
 }
 
 void harmony_vk_bind_vertex_buffers(
-    VkDevice device,
     VkCommandBuffer cmd,
     u32 begin_index,
     u32 count,
@@ -4479,7 +4346,6 @@ void harmony_vk_bind_vertex_buffers(
     usize *offsets
 
 ) {
-    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(count > 0);
     harmony_assert(vertex_buffers != NULL);
@@ -4487,35 +4353,30 @@ void harmony_vk_bind_vertex_buffers(
     harmony_vk_pfn.vkCmdBindVertexBuffers(cmd, begin_index, count, vertex_buffers, offsets);
 }
 
-void harmony_vk_bind_vertex_buffer(VkDevice device, VkCommandBuffer cmd, VkBuffer vertex_buffer) {
-    harmony_assert(device != VK_NULL_HANDLE);
+void harmony_vk_bind_vertex_buffer(VkCommandBuffer cmd, VkBuffer vertex_buffer) {
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(vertex_buffer != VK_NULL_HANDLE);
     harmony_vk_pfn.vkCmdBindVertexBuffers(cmd, 0, 1, &vertex_buffer, &(usize){0});
 }
 
 void harmony_vk_bind_index_buffer(
-    VkDevice device,
     VkCommandBuffer cmd,
     VkBuffer index_buffer,
     usize offset,
     VkIndexType type
 ) {
-    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(index_buffer != VK_NULL_HANDLE);
     harmony_vk_pfn.vkCmdBindIndexBuffer(cmd, index_buffer, offset, type);
 }
 
 void harmony_vk_draw(
-    VkDevice device,
     VkCommandBuffer cmd,
     u32 first_vertex,
     u32 vertex_count,
     u32 first_instance,
     u32 instance_count
 ) {
-    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(vertex_count > 0);
     harmony_assert(instance_count > 0);
@@ -4523,7 +4384,6 @@ void harmony_vk_draw(
 }
 
 void harmony_vk_draw_indexed(
-    VkDevice device,
     VkCommandBuffer cmd,
     u32 vertex_offset,
     u32 first_index,
@@ -4531,15 +4391,13 @@ void harmony_vk_draw_indexed(
     u32 first_instance,
     u32 instance_count
 ) {
-    harmony_assert(device != VK_NULL_HANDLE);
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(index_count > 0);
     harmony_assert(instance_count > 0);
     harmony_vk_pfn.vkCmdDrawIndexed(cmd, index_count, instance_count, first_index, (i32)vertex_offset, first_instance);
 }
 
-void harmony_vk_dispatch(VkDevice device, VkCommandBuffer cmd, u32 x, u32 y, u32 z) {
-    harmony_assert(device != VK_NULL_HANDLE);
+void harmony_vk_dispatch(VkCommandBuffer cmd, u32 x, u32 y, u32 z) {
     harmony_assert(cmd != VK_NULL_HANDLE);
     harmony_assert(x > 0);
     harmony_assert(y > 0);

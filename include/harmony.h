@@ -124,26 +124,6 @@ typedef intptr_t isize;
     } \
 })
 
-/**
- * A high precision clock for timers and game deltas
- */
-typedef struct HarmonyClock {
-    struct timespec time;
-} HarmonyClock;
-
-/**
- * Resets the clock and gets the delta since the last tick in seconds
- *
- * Parameters
- * - clock The clock to tick, must not be NULL
- * Returns
- * - Seconds since last tick
- */
-inline f64 harmony_clock_tick(HarmonyClock *hclock) {
-    f64 prev = (f64)hclock->time.tv_sec + (f64)hclock->time.tv_nsec / 1.0e9;
-    timespec_get(&hclock->time, TIME_UTC);
-    return ((f64)hclock->time.tv_sec + (f64)hclock->time.tv_nsec / 1.0e9) - prev;
-}
 
 /**
  * Opens a dynamic library at the path
@@ -211,6 +191,27 @@ inline void *harmony_dynamic_lib_load_symbol(void *lib, const char *symbol) {
 #error "harmony dynamic library loading only implemented for unix"
 
 #endif
+
+/**
+ * A high precision clock for timers and game deltas
+ */
+typedef struct HarmonyClock {
+    struct timespec time;
+} HarmonyClock;
+
+/**
+ * Resets the clock and gets the delta since the last tick in seconds
+ *
+ * Parameters
+ * - clock The clock to tick, must not be NULL
+ * Returns
+ * - Seconds since last tick
+ */
+static inline f64 harmony_clock_tick(HarmonyClock *hclock) {
+    f64 prev = (f64)hclock->time.tv_sec + (f64)hclock->time.tv_nsec / 1.0e9;
+    timespec_get(&hclock->time, TIME_UTC);
+    return ((f64)hclock->time.tv_sec + (f64)hclock->time.tv_nsec / 1.0e9) - prev;
+}
 
 #define PI      3.1415926535897932
 #define TAU     6.2831853071795864
